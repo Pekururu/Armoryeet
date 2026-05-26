@@ -46,11 +46,11 @@ Useful `/yeet` actions:
 ## Build
 
 ```bash
-dotnet build -c Release
+dotnet build src/Armoryeet -c Release
 ```
 
 Release package:
 
 ```text
-bin/Release/Armoryeet/latest.zip
+src/Armoryeet/bin/Release/Armoryeet/latest.zip
 ```

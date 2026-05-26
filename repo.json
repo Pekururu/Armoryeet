@@ -19,7 +19,7 @@
     "DownloadLinkInstall": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
     "DownloadLinkUpdate": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
     "DownloadLinkTesting": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
-    "IconUrl": "https://raw.githubusercontent.com/Korokatto/Armoryeet/main/images/icon.png",
+    "IconUrl": "https://raw.githubusercontent.com/Korokatto/Armoryeet/main/src/Armoryeet/images/icon.png",
     "LastUpdate": "1779833421"
   }
 ]
