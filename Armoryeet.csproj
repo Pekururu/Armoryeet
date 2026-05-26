@@ -1,0 +1,14 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>0.1.0.0</Version>
+    <Authors>Koro</Authors>
+    <Company>Koro</Company>
+    <Description>Moves armoury chest gear that is not referenced by any gearset back to inventory.</Description>
+    <PackageProjectUrl>https://github.com/Korokatto/Armoryeet</PackageProjectUrl>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="images/icon.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

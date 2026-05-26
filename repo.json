@@ -1,0 +1,25 @@
+[
+  {
+    "Author": "Koro",
+    "Name": "Armoryeet",
+    "InternalName": "Armoryeet",
+    "AssemblyVersion": "0.1.0.0",
+    "Description": "Clean up your armoury chest without touching gearset items.\n\nArmoryeet scans your gearsets, finds armoury chest gear that is not used by any of them, and moves it back to inventory only when you tell it to.",
+    "ApplicableVersion": "any",
+    "RepoUrl": "https://github.com/Korokatto/Armoryeet",
+    "DalamudApiLevel": 15,
+    "Punchline": "Moves unused armoury chest gear back to inventory.",
+    "Tags": [
+      "inventory",
+      "armoury",
+      "gearset"
+    ],
+    "IsHide": false,
+    "IsTestingExclusive": false,
+    "DownloadLinkInstall": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
+    "DownloadLinkUpdate": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
+    "DownloadLinkTesting": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
+    "IconUrl": "https://raw.githubusercontent.com/Korokatto/Armoryeet/main/images/icon.png",
+    "LastUpdate": "1779833421"
+  }
+]
