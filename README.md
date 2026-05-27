@@ -42,15 +42,3 @@ Useful `/yeet` actions:
 /yeet status
 /yeet stop
 ```
-
-## Build
-
-```bash
-dotnet build src/Armoryeet -c Release
-```
-
-Release package:
-
-```text
-src/Armoryeet/bin/Release/Armoryeet/latest.zip
-```
