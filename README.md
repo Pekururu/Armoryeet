@@ -1,5 +1,9 @@
 # Armoryeet
 
+<p align="center">
+  <img src="src/Armoryeet/images/icon.png" alt="Armoryeet icon" width="128">
+</p>
+
 Armoryeet is a Dalamud plugin for safely cleaning unused gear out of the FFXIV Armoury Chest.
 
 It compares Armoury Chest items against equipped gear and every saved gearset, presents the movable results for review, and moves only the items you select. Capacity checks, movement blockers, retry limits, and a final gearset check protect every reviewed move.
