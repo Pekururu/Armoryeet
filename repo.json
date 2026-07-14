@@ -1,14 +1,14 @@
 [
   {
-    "Author": "Koro",
+    "Author": "Pekururu",
     "Name": "Armoryeet",
     "InternalName": "Armoryeet",
-    "AssemblyVersion": "0.1.0.0",
-    "Description": "Clean up your armoury chest without touching gearset items.\n\nArmoryeet scans your gearsets, finds armoury chest gear that is not used by any of them, and moves it back to inventory only when you tell it to.",
+    "AssemblyVersion": "1.0.0.0",
+    "Description": "Armoryeet finds Armoury Chest items that are not equipped or used by any gearset. Review and select the results, then move them to your inventory with capacity checks, movement safeguards, and a final gearset recheck.",
     "ApplicableVersion": "any",
-    "RepoUrl": "https://github.com/Korokatto/Armoryeet",
+    "RepoUrl": "https://github.com/Pekururu/Armoryeet",
     "DalamudApiLevel": 15,
-    "Punchline": "Moves unused armoury chest gear back to inventory.",
+    "Punchline": "Safely clean unused gear from your Armoury Chest.",
     "Tags": [
       "inventory",
       "armoury",
@@ -16,10 +16,10 @@
     ],
     "IsHide": false,
     "IsTestingExclusive": false,
-    "DownloadLinkInstall": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
-    "DownloadLinkUpdate": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
-    "DownloadLinkTesting": "https://github.com/Korokatto/Armoryeet/releases/download/v0.1.0/Armoryeet.zip",
-    "IconUrl": "https://raw.githubusercontent.com/Korokatto/Armoryeet/main/src/Armoryeet/images/icon.png",
-    "LastUpdate": "1779833421"
+    "DownloadLinkInstall": "https://github.com/Pekururu/Armoryeet/releases/download/v1.0.0/Armoryeet.zip",
+    "DownloadLinkUpdate": "https://github.com/Pekururu/Armoryeet/releases/download/v1.0.0/Armoryeet.zip",
+    "DownloadLinkTesting": "https://github.com/Pekururu/Armoryeet/releases/download/v1.0.0/Armoryeet.zip",
+    "IconUrl": "https://raw.githubusercontent.com/Pekururu/Armoryeet/main/src/Armoryeet/images/icon.png",
+    "LastUpdate": "1784040703"
   }
 ]
