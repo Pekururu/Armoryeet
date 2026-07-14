@@ -12,7 +12,6 @@ namespace Armoryeet;
 public sealed class Plugin : IDalamudPlugin
 {
     private const string CommandName = "/armoryeet";
-    private const string BritishCommandName = "/armouryeet";
     private const string YeetCommandName = "/yeet";
     private const string YeetSettingsCommandName = "/yeetsettings";
 
@@ -35,6 +34,9 @@ public sealed class Plugin : IDalamudPlugin
     internal static IDataManager DataManager { get; private set; } = null!;
 
     [PluginService]
+    internal static ITextureProvider TextureProvider { get; private set; } = null!;
+
+    [PluginService]
     internal static IPluginLog Log { get; private set; } = null!;
 
     [PluginService]
@@ -52,15 +54,14 @@ public sealed class Plugin : IDalamudPlugin
         this.Configuration.Initialize(PluginInterface);
 
         this.gearsetScanner = new GearsetScanner();
-        this.armouryScanner = new ArmouryScanner();
+        this.armouryScanner = new ArmouryScanner(DataManager);
         this.itemMover = new ItemMover(Framework, ClientState, Condition, Log, this.gearsetScanner, this.Configuration);
         this.mainWindow = new PluginUI(
             this.Configuration,
             this.gearsetScanner,
             this.armouryScanner,
             this.itemMover,
-            DataManager,
-            this.Configuration.Save,
+            TextureProvider,
             this.OpenConfigUi);
         this.configWindow = new ConfigUI(this.Configuration, this.Configuration.Save);
 
@@ -69,18 +70,15 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
             HelpMessage = "Open Armoryeet.",
-        });
-        CommandManager.AddHandler(BritishCommandName, new CommandInfo(this.OnCommand)
-        {
-            HelpMessage = "Open Armoryeet.",
+            ShowInHelp = false,
         });
         CommandManager.AddHandler(YeetCommandName, new CommandInfo(this.OnYeetCommand)
         {
-            HelpMessage = "Open Armoryeet. Use /yeet help for actions.",
+            HelpMessage = "Open Armoryeet (alias: /armoryeet).\n/yeet help → Show commands and aliases.",
         });
         CommandManager.AddHandler(YeetSettingsCommandName, new CommandInfo(this.OnSettingsCommand)
         {
-            HelpMessage = "Open settings.",
+            HelpMessage = "Open Armoryeet settings.",
         });
 
         PluginInterface.UiBuilder.Draw += this.WindowSystem.Draw;
@@ -104,7 +102,6 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw -= this.WindowSystem.Draw;
         CommandManager.RemoveHandler(YeetSettingsCommandName);
         CommandManager.RemoveHandler(YeetCommandName);
-        CommandManager.RemoveHandler(BritishCommandName);
         CommandManager.RemoveHandler(CommandName);
         this.WindowSystem.RemoveAllWindows();
         this.configWindow.Dispose();
@@ -121,6 +118,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         this.ToggleConfigUi();
     }
+
 
     private void OnYeetCommand(string command, string arguments)
     {
@@ -151,7 +149,6 @@ public sealed class Plugin : IDalamudPlugin
                 this.ScanAndMove([InventoryType.ArmoryOffHand], "off hand");
                 break;
             case "armor":
-            case "armour":
                 this.ScanAndMove(ArmouryScanner.ArmorTypes, "armor");
                 break;
             case "head":
@@ -203,7 +200,7 @@ public sealed class Plugin : IDalamudPlugin
                 this.ToggleConfigUi();
                 break;
             case "stop":
-                this.itemMover.Clear();
+                this.itemMover.Stop();
                 this.Print("Move queue stopped.");
                 break;
             case "status":
@@ -269,17 +266,18 @@ public sealed class Plugin : IDalamudPlugin
     private List<ArmouryItem> Scan(IEnumerable<InventoryType> inventoryTypes)
     {
         var protectedIds = this.gearsetScanner.BuildGearsetItemIds();
-        var items = this.armouryScanner.FindOrphans(protectedIds, inventoryTypes);
-        this.mainWindow.SetScanResults(items, protectedIds.Count);
-        return items;
+        var result = this.armouryScanner.Scan(protectedIds, inventoryTypes);
+        this.mainWindow.SetScanResults(result.MovableItems, result.ProtectedItemCount);
+        return result.MovableItems.ToList();
     }
 
     private void PrintStatus()
     {
-        if (this.itemMover.IsMoving)
+        var snapshot = this.itemMover.Snapshot;
+        if (snapshot.State != ItemMoverState.Idle)
         {
-            var completed = this.itemMover.MovedCount + this.itemMover.SkippedCount;
-            this.Print($"Moving {completed}/{this.itemMover.TotalCount}. Moved {this.itemMover.MovedCount}, skipped {this.itemMover.SkippedCount}.");
+            var reason = snapshot.State == ItemMoverState.Paused ? $" ({snapshot.PausedReason})" : string.Empty;
+            this.Print($"{snapshot.State}{reason}. {snapshot.ProcessedCount}/{snapshot.TotalCount}; moved {snapshot.MovedCount}, skipped {snapshot.SkippedCount}.");
             return;
         }
 
@@ -296,6 +294,7 @@ public sealed class Plugin : IDalamudPlugin
     private void PrintHelp()
     {
         this.Print("Commands: /yeet, /yeet scan, /yeet chest, /yeet weapons, /yeet armor, /yeet accessories, /yeet mainhand, /yeet offhand, /yeet head, /yeet body, /yeet hands, /yeet waist, /yeet legs, /yeet feet, /yeet ears, /yeet neck, /yeet wrist, /yeet rings, /yeet settings, /yeet stop, /yeet status.");
+        this.Print("Hover the ? button in Armoryeet for a quick command reference.");
     }
 
     private void Print(string message)

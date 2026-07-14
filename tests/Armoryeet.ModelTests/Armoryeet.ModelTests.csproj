@@ -1,0 +1,21 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Use_DalamudPackager>false</Use_DalamudPackager>
+    <Use_Dalamud_ImGui>false</Use_Dalamud_ImGui>
+    <Use_Dalamud_Lumina>false</Use_Dalamud_Lumina>
+    <Use_Dalamud_Lumina_Excel>false</Use_Dalamud_Lumina_Excel>
+    <Use_Dalamud_Newtonsoft_Json>false</Use_Dalamud_Newtonsoft_Json>
+    <Use_Dalamud_Serilog>false</Use_Dalamud_Serilog>
+    <Use_Dalamud_MSObjectPool>false</Use_Dalamud_MSObjectPool>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\Armoryeet\ArmouryItem.cs" Link="ArmouryItem.cs" />
+    <Compile Include="..\..\src\Armoryeet\ScanSession.cs" Link="ScanSession.cs" />
+    <Compile Include="..\..\src\Armoryeet\ItemMoverSnapshot.cs" Link="ItemMoverSnapshot.cs" />
+    <Reference Update="FFXIVClientStructs" Private="true" />
+  </ItemGroup>
+</Project>

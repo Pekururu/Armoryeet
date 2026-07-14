@@ -5,4 +5,6 @@ namespace Armoryeet;
 public readonly record struct ArmouryItem(
     InventoryType InventoryType,
     int Slot,
-    uint ItemId);
+    uint ItemId,
+    string DisplayName = "",
+    uint IconId = 0);

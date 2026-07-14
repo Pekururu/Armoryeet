@@ -1,10 +1,10 @@
 {
-  "Author": "Koro",
+  "Author": "Pekururu",
   "Name": "Armoryeet",
-  "Punchline": "Moves unused armoury chest gear back to inventory.",
-  "Description": "Clean up your armoury chest without touching gearset items.\n\nArmoryeet scans your gearsets, finds armoury chest gear that is not used by any of them, and moves it back to inventory only when you tell it to.",
-  "RepoUrl": "https://github.com/Korokatto/Armoryeet",
-  "IconUrl": "https://raw.githubusercontent.com/Korokatto/Armoryeet/main/src/Armoryeet/images/icon.png",
+  "Punchline": "Safely clean unused gear from your Armoury Chest.",
+  "Description": "Armoryeet finds Armoury Chest items that are not equipped or used by any gearset. Review and select the results, then move them to your inventory with capacity checks, movement safeguards, and a final gearset recheck.",
+  "RepoUrl": "https://github.com/Pekururu/Armoryeet",
+  "IconUrl": "https://raw.githubusercontent.com/Pekururu/Armoryeet/main/src/Armoryeet/images/icon.png",
   "ApplicableVersion": "any",
   "Tags": [
     "inventory",

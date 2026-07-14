@@ -15,6 +15,10 @@ public sealed class Configuration : IPluginConfiguration
 
     public bool CloseAfterMove { get; set; }
 
+    public bool RescanAfterMove { get; set; }
+
+    public bool SkipMoveConfirmation { get; set; }
+
     public bool ShowDetailsByDefault { get; set; }
 
     public bool IncludeMainHand { get; set; } = true;

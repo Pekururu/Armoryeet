@@ -1,10 +1,10 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>0.1.0.0</Version>
-    <Authors>Koro</Authors>
-    <Company>Koro</Company>
-    <Description>Moves armoury chest gear that is not referenced by any gearset back to inventory.</Description>
-    <PackageProjectUrl>https://github.com/Korokatto/Armoryeet</PackageProjectUrl>
+    <Version>1.0.0.0</Version>
+    <Authors>Pekururu</Authors>
+    <Company>Pekururu</Company>
+    <Description>Safely reviews and moves unused Armoury Chest gear back to inventory.</Description>
+    <PackageProjectUrl>https://github.com/Pekururu/Armoryeet</PackageProjectUrl>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
