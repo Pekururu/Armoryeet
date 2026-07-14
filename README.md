@@ -9,7 +9,7 @@ It scans your gearsets, finds armoury chest items that are not referenced by any
 Add this custom plugin repository in Dalamud:
 
 ```text
-https://raw.githubusercontent.com/Korokatto/Armoryeet/main/repo.json
+https://raw.githubusercontent.com/Pekururu/Armoryeet/main/repo.json
 ```
 
 In game:
