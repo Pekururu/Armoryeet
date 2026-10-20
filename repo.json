@@ -3,7 +3,7 @@
     "Author": "Pekururu",
     "Name": "Armoryeet",
     "InternalName": "Armoryeet",
-    "AssemblyVersion": "1.1.0.0",
+    "AssemblyVersion": "1.1.1.0",
     "Description": "Armoryeet finds Armoury Chest items that are not equipped or used by any gearset. Review and select the results, then move them to your inventory with capacity checks, movement safeguards, and a final gearset recheck.",
     "ApplicableVersion": "any",
     "RepoUrl": "https://github.com/Pekururu/Armoryeet",
@@ -16,10 +16,10 @@
     ],
     "IsHide": false,
     "IsTestingExclusive": false,
-    "DownloadLinkInstall": "https://github.com/Pekururu/Armoryeet/releases/download/v1.1.0/Armoryeet.zip",
-    "DownloadLinkUpdate": "https://github.com/Pekururu/Armoryeet/releases/download/v1.1.0/Armoryeet.zip",
-    "DownloadLinkTesting": "https://github.com/Pekururu/Armoryeet/releases/download/v1.1.0/Armoryeet.zip",
+    "DownloadLinkInstall": "https://github.com/Pekururu/Armoryeet/releases/download/v1.1.1/Armoryeet.zip",
+    "DownloadLinkUpdate": "https://github.com/Pekururu/Armoryeet/releases/download/v1.1.1/Armoryeet.zip",
+    "DownloadLinkTesting": "https://github.com/Pekururu/Armoryeet/releases/download/v1.1.1/Armoryeet.zip",
     "IconUrl": "https://raw.githubusercontent.com/Pekururu/Armoryeet/main/src/Armoryeet/images/icon.png",
-    "LastUpdate": "1792492260"
+    "LastUpdate": "1792493306"
   }
 ]
