@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
   <title>scan</title>
   <desc>Viewfinder corners with a scan line.</desc>
+  <!-- Design reference only: strokes map to the theme Foreground, the red part to the theme Accent. In the plugin these are drawn by Diktat.UiIcons from theme colors, never from these fixed hex values. -->
   <path d="M28 84V28H84M172 28H228V84M228 172V228H172M84 228H28V172" fill="none" stroke="white" stroke-width="12" stroke-linejoin="miter"/>
   <path d="M68 118H188V138H68Z" fill="#B03030"/>
 </svg>

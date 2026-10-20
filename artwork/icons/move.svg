@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
   <title>move</title>
   <desc>Chest outline with an arrow leaving it.</desc>
+  <!-- Design reference only: strokes map to the theme Foreground, the red part to the theme Accent. In the plugin these are drawn by Diktat.UiIcons from theme colors, never from these fixed hex values. -->
   <path d="M36 120H220V228H36Z" fill="none" stroke="white" stroke-width="12" stroke-linejoin="miter"/>
   <path d="M128 16L176 72H146V100H110V72H80Z" fill="#B03030"/>
 </svg>

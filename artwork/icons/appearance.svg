@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
   <title>appearance</title>
   <desc>Half-filled swatch for theme and color choices.</desc>
+  <!-- Design reference only: strokes map to the theme Foreground, the red part to the theme Accent. In the plugin these are drawn by Diktat.UiIcons from theme colors, never from these fixed hex values. -->
   <path d="M36 36H220V220H36Z" fill="none" stroke="white" stroke-width="12" stroke-linejoin="miter"/>
   <path d="M36 36H128V220H36Z" fill="white"/>
   <path d="M156 76H196V180H156Z" fill="#B03030"/>
