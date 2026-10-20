@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>stop</title>
+  <desc>Square stop symbol.</desc>
+  <path d="M44 44H212V212H44Z" fill="none" stroke="white" stroke-width="12" stroke-linejoin="miter"/>
+  <path d="M88 88H168V168H88Z" fill="#B03030"/>
+</svg>

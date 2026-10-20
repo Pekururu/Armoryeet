@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>settings</title>
+  <desc>Three sliders.</desc>
+  <path d="M28 64H228M28 128H228M28 192H228" fill="none" stroke="white" stroke-width="12" stroke-linejoin="miter"/>
+  <path d="M66 42H94V86H66ZM146 106H174V150H146ZM96 170H124V214H96Z" fill="#B03030"/>
+</svg>
