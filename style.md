@@ -1,6 +1,6 @@
 # Armoryeet UI style
 
-Armoryeet uses quickUI 0.1.1 for its visual system. This supersedes the earlier rounded orange theme proposal. The MIT-licensed library snapshot lives in `vendor/quickUI`; keep reusable styling changes in the upstream quickUI project and update the snapshot together.
+Armoryeet uses Diktat 0.1.1 for its visual system. This supersedes the earlier rounded orange theme proposal. The MIT-licensed library snapshot lives in `vendor/Diktat`; keep reusable styling changes in the upstream Diktat project and update the snapshot together.
 
 ## Theme and lifecycle
 
@@ -12,7 +12,7 @@ Armoryeet uses quickUI 0.1.1 for its visual system. This supersedes the earlier 
 
 ## Components and invariants
 
-Use quickUI metrics, surfaces, sections, selectable rows, buttons, status labels, progress, and modal helpers. Native inputs inherit the scoped theme. Keep action IDs stable and separate from labels.
+Use Diktat metrics, surfaces, sections, selectable rows, buttons, status labels, progress, and modal helpers. Native inputs inherit the scoped theme. Keep action IDs stable and separate from labels.
 
 The review body scrolls while a divided footer keeps capacity guidance left and actions right, stacking when width is limited. Enabled primary actions use a solid accent fill. Compact category headers combine a tri-state checkbox, collapse control, and selected/total count; category toggles include filtered-out items. Summary and confirmation headlines use slightly enlarged text, with protected counts and helper text kept secondary. Open and draw confirmation outside the child ID scope. Preserve Armoury order, group selection across filtered rows, hover details, and item-specific skip reasons.
 
@@ -24,4 +24,4 @@ Borrow game icons from Dalamud's shared texture cache; never dispose borrowed wr
 
 ## Verification
 
-Run the Release build and model harness, including theme persistence tests. Verify QuickUI.dll and QuickUI.LICENSE.txt in the release ZIP. In-game, check all windows, popup cancellation and stale confirmation, scrolling, keyboard focus, Apply/Cancel/reload, and other plugins' styling at normal and enlarged UI scales.
+Run the Release build and model harness, including theme persistence tests. Verify Diktat.dll and Diktat.LICENSE.txt in the release ZIP. In-game, check all windows, popup cancellation and stale confirmation, scrolling, keyboard focus, Apply/Cancel/reload, and other plugins' styling at normal and enlarged UI scales.

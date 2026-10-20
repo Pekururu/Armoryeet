@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace QuickUI;
+namespace Diktat;
 
 public static class TokyoNight
 {

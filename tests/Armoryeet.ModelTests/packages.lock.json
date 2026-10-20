@@ -17,10 +17,10 @@
         "type": "Project",
         "dependencies": {
           "DalamudPackager": "[15.0.0, )",
-          "QuickUI": "[0.1.0, )"
+          "Diktat": "[0.1.1, )"
         }
       },
-      "quickui": {
+      "diktat": {
         "type": "Project"
       }
     }

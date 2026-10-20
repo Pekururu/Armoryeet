@@ -1,7 +1,7 @@
 using System.Numerics;
 using Dalamud.Interface.Style;
 
-namespace QuickUI;
+namespace Diktat;
 
 public sealed record ThemePreset(string Id, string Name, UiTheme Theme);
 
@@ -27,7 +27,7 @@ public static class ThemePresets
     private static UiTheme CreateDalamudDefault()
     {
         // Read built-in data only: never capture a plugin's pushed style, call Apply,
-        // or read the user's configured host theme. Keep quickUI geometry/opacity.
+        // or read the user's configured host theme. Keep Diktat geometry/opacity.
         var standard = StyleModelV1.DalamudStandard;
         var states = standard.BuiltInColors;
         Vector4 Color(string name) => ThemePalette.Validate(standard.Colors[name]);

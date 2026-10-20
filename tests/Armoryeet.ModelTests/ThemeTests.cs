@@ -1,6 +1,6 @@
 using Armoryeet;
 using Newtonsoft.Json;
-using QuickUI;
+using Diktat;
 
 internal static class ThemeTests
 {

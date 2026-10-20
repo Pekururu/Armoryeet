@@ -72,9 +72,9 @@ Responsibilities:
 - `ScanSession`: pure selection, grouping, capacity, and reconciliation state.
 - `ItemMover`: framework-thread movement state machine, blockers, retries, and skip reasons.
 - `ItemMoverSnapshot`: immutable UI-facing movement state.
-- `PluginUI` and `ConfigUI`: quickUI presentation and user actions.
+- `PluginUI` and `ConfigUI`: Diktat presentation and user actions.
 - The inline Appearance tab and the plugin-owned `ThemeEditor`: live color preview with explicit Apply/Cancel.
-- `vendor/quickUI`: reproducible MIT-licensed library snapshot, built and packaged as QuickUI.dll.
+- `vendor/Diktat`: reproducible MIT-licensed library snapshot, built and packaged as Diktat.dll.
 
 Keep game-memory access in the scanner/mover boundary. Keep selection and display policy in the model/UI layers. Do not duplicate item-ID normalization or move safety checks in UI code.
 

@@ -1,6 +1,6 @@
 using Dalamud.Interface.Windowing;
 
-namespace QuickUI;
+namespace Diktat;
 
 /// <summary>A WindowSystem window whose styling is confined to PreDraw/PostDraw.</summary>
 public abstract class ThemedWindow : Window
@@ -29,7 +29,7 @@ public abstract class ThemedWindow : Window
 
     public sealed override void PreDraw()
     {
-        if (this.scope != null) throw new InvalidOperationException("The previous quickUI window style scope was not closed.");
+        if (this.scope != null) throw new InvalidOperationException("The previous Diktat window style scope was not closed.");
         this.Theme = this.pendingTheme ?? this.Theme;
         this.pendingTheme = null;
         this.scope = new UiStyleScope(this.Theme);

@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../vendor/quickUI/src/QuickUI/QuickUI.csproj" />
-    <None Include="../../vendor/quickUI/LICENSE" Link="QuickUI.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="../../vendor/Diktat/src/Diktat/Diktat.csproj" />
+    <None Include="../../vendor/Diktat/LICENSE" Link="Diktat.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
     <InternalsVisibleTo Include="Armoryeet.ModelTests" />
     <None Include="images/icon.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

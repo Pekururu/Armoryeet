@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
-using QuickUI;
+using Diktat;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 
@@ -101,7 +101,7 @@ public sealed class ConfigUI : ThemedWindow, IDisposable
         var delay = this.configuration.DelayBetweenItemsMs;
         ImGui.SetNextItemWidth(Math.Min(240 * ImGuiHelpers.GlobalScale, ImGui.GetContentRegionAvail().X));
         if (ImGui.SliderInt("Delay between items", ref delay, 0, 2000, "%d ms")) { this.configuration.DelayBetweenItemsMs = delay; this.save(); }
-        ArmoryeetUi.SecondaryText(this.Theme, "Recommended: 250 ms. Retry timing is separate.");
+        UiWidgets.SecondaryText(this.Theme, "Recommended: 250 ms. Retry timing is separate.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         UiWidgets.Status(this.Theme, "Advanced", UiTone.Warning);
         ImGui.TextWrapped("Skipping confirmation starts moves immediately. Capacity and selection checks still apply.");
@@ -132,11 +132,11 @@ public sealed class ConfigUI : ThemedWindow, IDisposable
     private void Option(string label, string? description, Func<bool> getter, Action<bool> setter)
     {
         var value = getter();
-        if (ArmoryeetUi.CompactCheckbox(this.Theme, label, ref value)) { setter(value); this.save(); }
+        if (UiWidgets.CompactCheckbox(this.Theme, label, ref value)) { setter(value); this.save(); }
         if (description == null) return;
         var indent = ImGui.GetTextLineHeight() + ImGui.GetStyle().ItemInnerSpacing.X;
         ImGui.Indent(indent);
-        ArmoryeetUi.SecondaryText(this.Theme, description);
+        UiWidgets.SecondaryText(this.Theme, description);
         ImGui.Unindent(indent);
     }
 }

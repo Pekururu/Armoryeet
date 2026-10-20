@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using QuickUI;
+using Diktat;
 using System.Linq;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;

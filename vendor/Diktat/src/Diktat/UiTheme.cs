@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace QuickUI;
+namespace Diktat;
 
 /// <summary>Immutable, plugin-independent colors and layout metrics.</summary>
 public sealed record UiTheme(UiColors Colors, UiMetrics Metrics)

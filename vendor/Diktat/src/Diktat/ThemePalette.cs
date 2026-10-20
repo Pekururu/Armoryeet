@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Numerics;
 
-namespace QuickUI;
+namespace Diktat;
 
 /// <summary>One token map shared by editing, reset, validation, and serialization.</summary>
 internal static class ThemePalette

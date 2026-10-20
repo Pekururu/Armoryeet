@@ -8,7 +8,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 
-namespace QuickUI;
+namespace Diktat;
 
 /// <summary>Presentation only. Call within a UiStyleScope and keep selection/actions in the caller.</summary>
 public static class UiWidgets
@@ -236,6 +236,58 @@ public static class UiWidgets
         var wrap = iconId == 0 ? null : textures.GetFromGameIcon(new GameIconLookup(iconId)).GetWrapOrDefault();
         if (wrap == null) ImGui.Dummy(size);
         else ImGui.Image(wrap.Handle, size);
+    }
+
+    public static float ButtonWidth(string label) => ImGui.CalcTextSize(label).X + ImGui.GetStyle().FramePadding.X * 2;
+
+    public static float ButtonHeight(UiTheme theme) => Math.Max(theme.Metrics.ControlHeight * ImGuiHelpers.GlobalScale, ImGui.GetFrameHeight());
+
+    /// <summary>Solid accent-filled button for the single main action. Disabled buttons use the raised surface.</summary>
+    public static bool PrimaryButton(UiTheme theme, string id, string label, bool enabled = true, string? reason = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(label);
+        using var disabled = ImRaii.Disabled(!enabled);
+        using var colors = ImRaii.PushColor(ImGuiCol.Text, enabled ? theme.Colors.Background : theme.Colors.DarkForeground)
+            .Push(ImGuiCol.Button, enabled ? theme.Colors.Accent : theme.Colors.Raised)
+            .Push(ImGuiCol.ButtonHovered, Vector4.Lerp(theme.Colors.Accent, Vector4.One, .12f))
+            .Push(ImGuiCol.ButtonActive, Vector4.Lerp(theme.Colors.Accent, Vector4.One, .22f));
+        var clicked = ImGui.Button($"{label}###{id}", new Vector2(0, ButtonHeight(theme)));
+        if (!enabled && reason != null && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip(reason);
+        return clicked;
+    }
+
+    /// <summary>Zero-padding checkbox. <paramref name="mixed"/> draws an accent bar for partial selection.</summary>
+    public static bool CompactCheckbox(UiTheme theme, string label, ref bool selected, bool mixed = false)
+    {
+        using var padding = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, Vector2.Zero);
+        var clicked = ImGui.Checkbox(label, ref selected);
+        if (mixed && !clicked)
+        {
+            var start = ImGui.GetItemRectMin();
+            var side = ImGui.GetTextLineHeight();
+            ImGui.GetWindowDrawList().AddRectFilled(start + new Vector2(side * .22f, side * .43f),
+                start + new Vector2(side * .78f, side * .57f), ImGui.GetColorU32(theme.Colors.Accent));
+        }
+        return clicked;
+    }
+
+    /// <summary>Slightly enlarged, bright, wrapped headline text.</summary>
+    public static void Emphasis(UiTheme theme, string text)
+    {
+        const float scale = 1.15f;
+        var width = Math.Max(1, ImGui.GetContentRegionAvail().X);
+        var size = ImGui.CalcTextSize(text, false, width / scale) * scale;
+        ImGui.GetWindowDrawList().AddText(ImGui.GetFont(), ImGui.GetFontSize() * scale,
+            ImGui.GetCursorScreenPos(), ImGui.GetColorU32(theme.Colors.BrightForeground), text, width);
+        ImGui.Dummy(new Vector2(Math.Min(width, size.X), size.Y));
+    }
+
+    /// <summary>Wrapped secondary text in the dimmer foreground.</summary>
+    public static void SecondaryText(UiTheme theme, string text)
+    {
+        using var color = ImRaii.PushColor(ImGuiCol.Text, theme.Colors.DarkForeground);
+        ImGui.TextWrapped(text);
     }
 
     internal static float ProgressFraction(int completed, int total) => total <= 0 ? 0 : Math.Clamp((float)completed / total, 0, 1);

@@ -6,7 +6,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility;
-using QuickUI;
+using Diktat;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -106,8 +106,8 @@ public sealed class PluginUI : ThemedWindow, IDisposable
             var capacityWarning = $"Not enough inventory space: {this.session.Items.Count} required, {this.session.FreeInventorySlots} available.";
             var textHeight = Math.Max(ImGui.CalcTextSize(capacityWarning, false, Math.Max(1, guidanceWidth)).Y,
                 ImGui.CalcTextSize(reason ?? this.CapacityGuidance(), false, Math.Max(1, guidanceWidth)).Y);
-            var height = inline ? Math.Max(ArmoryeetUi.ButtonHeight(this.Theme), textHeight)
-                : ArmoryeetUi.ButtonHeight(this.Theme) + textHeight + gap.Y;
+            var height = inline ? Math.Max(UiWidgets.ButtonHeight(this.Theme), textHeight)
+                : UiWidgets.ButtonHeight(this.Theme) + textHeight + gap.Y;
             UiWidgets.BodyWithFooter(this.Theme, "review", height + gap.Y * 2 + 1, this.DrawReview, this.DrawActions);
         }
         else this.DrawReview();
@@ -126,7 +126,7 @@ public sealed class PluginUI : ThemedWindow, IDisposable
                 UiWidgets.Title(this.Theme, this.session.HasScanned ? "No unused gear found" : "Review your Armoury Chest",
                     this.session.HasScanned ? "Equipped gear and saved gearsets remain protected." : "Scan for gear that is not equipped or used by a gearset.");
             }
-            if (ArmoryeetUi.PrimaryButton(this.Theme, "scan", this.session.HasScanned ? "Scan again" : "Scan Armoury Chest",
+            if (UiWidgets.PrimaryButton(this.Theme, "scan", this.session.HasScanned ? "Scan again" : "Scan Armoury Chest",
                 !this.itemMover.IsMoving, "Stop the active move before scanning.")) this.Scan();
             return;
         }
@@ -150,7 +150,7 @@ public sealed class PluginUI : ThemedWindow, IDisposable
             if (visible.Count != 0) this.DrawGroup(group.Type, visible, group.Items.Count);
         }
         if (visibleCount == 0) UiWidgets.HelpText(this.Theme, "No items match the filter.");
-        if (!string.IsNullOrWhiteSpace(this.filter)) ArmoryeetUi.SecondaryText(this.Theme,
+        if (!string.IsNullOrWhiteSpace(this.filter)) UiWidgets.SecondaryText(this.Theme,
             $"Showing {visibleCount} of {this.session.Items.Count} items. Selection includes hidden items.");
     }
 
@@ -158,11 +158,11 @@ public sealed class PluginUI : ThemedWindow, IDisposable
     {
         UiWidgets.Surface(this.Theme, "summary", () =>
         {
-            ArmoryeetUi.Emphasis(this.Theme, $"{this.session.SelectedCount} selected / {this.session.Items.Count} available");
+            UiWidgets.Emphasis(this.Theme, $"{this.session.SelectedCount} selected / {this.session.Items.Count} available");
             var tight = this.session.SelectedCount > this.session.FreeInventorySlots;
             UiWidgets.Status(this.Theme, $"{this.session.FreeInventorySlots} free slots", tight ? UiTone.Warning : UiTone.Neutral);
             ImGui.SameLine();
-            ArmoryeetUi.SecondaryText(this.Theme, $"·  {this.session.ProtectedCount} protected");
+            UiWidgets.SecondaryText(this.Theme, $"·  {this.session.ProtectedCount} protected");
         });
     }
 
@@ -183,7 +183,7 @@ public sealed class PluginUI : ThemedWindow, IDisposable
             ImGui.TableNextColumn();
             using (var disabled = ImRaii.Disabled(this.itemMover.Snapshot.IsActive))
             {
-                if (ArmoryeetUi.CompactCheckbox(this.Theme, $"##group-{type}", ref allSelected, mixed)) this.session.ToggleGroup(type);
+                if (UiWidgets.CompactCheckbox(this.Theme, $"##group-{type}", ref allSelected, mixed)) this.session.ToggleGroup(type);
             }
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip(this.itemMover.Snapshot.IsActive
                 ? "Stop the active move before changing selection."
@@ -229,7 +229,7 @@ public sealed class PluginUI : ThemedWindow, IDisposable
             }
             else
             {
-                ArmoryeetUi.Emphasis(this.Theme, $"Moved {snapshot.MovedCount} items · {this.session.FreeInventorySlots} free slots");
+                UiWidgets.Emphasis(this.Theme, $"Moved {snapshot.MovedCount} items · {this.session.FreeInventorySlots} free slots");
                 if (snapshot.SkippedCount > 0) UiWidgets.HelpText(this.Theme, $"{snapshot.SkippedCount} skipped items remain for review.");
                 if (snapshot.State != ItemMoverState.Completed) UiWidgets.HelpText(this.Theme, this.itemMover.Status);
             }
@@ -243,8 +243,8 @@ public sealed class PluginUI : ThemedWindow, IDisposable
     }
 
     private string MoveLabel => $"Move {this.session.SelectedCount} items";
-    private float ActionWidth() => (this.HasReviewItems ? ArmoryeetUi.ButtonWidth(this.MoveLabel) : 0)
-        + (this.itemMover.Snapshot.IsActive ? ArmoryeetUi.ButtonWidth("Stop") + (this.HasReviewItems ? ImGui.GetStyle().ItemSpacing.X : 0) : 0);
+    private float ActionWidth() => (this.HasReviewItems ? UiWidgets.ButtonWidth(this.MoveLabel) : 0)
+        + (this.itemMover.Snapshot.IsActive ? UiWidgets.ButtonWidth("Stop") + (this.HasReviewItems ? ImGui.GetStyle().ItemSpacing.X : 0) : 0);
     private string CapacityGuidance() => $"{this.session.SelectedCount} slots needed · {this.session.FreeInventorySlots} available";
 
     private void DrawActions()
@@ -268,7 +268,7 @@ public sealed class PluginUI : ThemedWindow, IDisposable
             if (UiWidgets.Button(this.Theme, "stop", "Stop", UiTone.Danger)) this.itemMover.Stop();
             if (this.HasReviewItems) ImGui.SameLine();
         }
-        if (this.HasReviewItems && ArmoryeetUi.PrimaryButton(this.Theme, "move-selected", this.MoveLabel, reason == null, reason))
+        if (this.HasReviewItems && UiWidgets.PrimaryButton(this.Theme, "move-selected", this.MoveLabel, reason == null, reason))
         {
             if (this.configuration.SkipMoveConfirmation) this.StartReviewedMove(); else this.OpenConfirmation();
         }
@@ -320,13 +320,13 @@ public sealed class PluginUI : ThemedWindow, IDisposable
         }
 
         var items = this.confirmationItems ?? Array.Empty<ArmouryItem>();
-        ArmoryeetUi.Emphasis(this.Theme, $"Move {items.Count} items to inventory?");
-        ArmoryeetUi.SecondaryText(this.Theme, $"{items.Count} slots needed · {this.confirmationCapacity} available at review");
+        UiWidgets.Emphasis(this.Theme, $"Move {items.Count} items to inventory?");
+        UiWidgets.SecondaryText(this.Theme, $"{items.Count} slots needed · {this.confirmationCapacity} available at review");
         ImGui.Spacing();
         ImGui.Separator();
         if (this.staleConfirmation) UiWidgets.Status(this.Theme, "Selection or capacity changed. Cancel and review again.", UiTone.Warning);
         var moveLabel = $"Move {items.Count} items";
-        var buttonsWidth = ArmoryeetUi.ButtonWidth("Cancel") + ImGui.GetStyle().ItemSpacing.X + ArmoryeetUi.ButtonWidth(moveLabel);
+        var buttonsWidth = UiWidgets.ButtonWidth("Cancel") + ImGui.GetStyle().ItemSpacing.X + UiWidgets.ButtonWidth(moveLabel);
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, ImGui.GetContentRegionAvail().X - buttonsWidth));
         if (UiWidgets.Button(this.Theme, "cancel-move", "Cancel", UiTone.Neutral))
         {
@@ -335,7 +335,7 @@ public sealed class PluginUI : ThemedWindow, IDisposable
             return;
         }
         ImGui.SameLine();
-        if (ArmoryeetUi.PrimaryButton(this.Theme, "confirm-move", moveLabel))
+        if (UiWidgets.PrimaryButton(this.Theme, "confirm-move", moveLabel))
         {
             var current = this.session.SelectedSnapshot();
             var capacity = ArmouryScanner.GetFreeInventorySlots(); this.session.RefreshCapacity(capacity);

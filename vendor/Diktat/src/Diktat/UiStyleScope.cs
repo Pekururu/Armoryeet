@@ -3,7 +3,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 
-namespace QuickUI;
+namespace Diktat;
 
 /// <summary>Use on the ImGui draw thread and dispose in reverse nesting order, within the same frame.</summary>
 public sealed class UiStyleScope : IDisposable

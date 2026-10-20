@@ -87,7 +87,7 @@ Behavior, scan scope, and movement settings are saved immediately.
 
 Open **Settings → Appearance** to choose Tokyo Night (default), Dalamud Default, FFXIV Menu, or custom colors. Changes preview across the main and settings windows; **Apply** saves them. **Cancel**, leaving the Appearance tab, or closing Settings restores the last applied theme. Appearance retains a fixed readable palette. Theme preferences belong to Armoryeet and do not affect other plugins.
 
-Armoryeet bundles quickUI 0.1.1 and its MIT license. No separate theming plugin is required.
+Armoryeet bundles Diktat 0.1.1 and its MIT license. No separate theming plugin is required.
 
 ## Development and verification
 
@@ -98,7 +98,7 @@ dotnet build src/Armoryeet/Armoryeet.csproj -c Release -p:RestoreLockedMode=true
 dotnet run --project tests/Armoryeet.ModelTests/Armoryeet.ModelTests.csproj -c Release -p:RestoreLockedMode=true
 ```
 
-The build uses the checked-in [quickUI source snapshot](vendor/quickUI/README.md); no sibling checkout is needed. CI also verifies the release ZIP contains QuickUI.dll and its license.
+The build uses the checked-in Diktat source snapshot (`vendor/Diktat`); no sibling checkout is needed. CI also verifies the release ZIP contains Diktat.dll and its license.
 
 The console harness tests theme compatibility, Apply/Cancel, failed saves, and the production assembly, including movement decisions against a simulated inventory boundary and completion while the window is closed. `dotnet test` does not execute these assertions. CI runs both commands against the stable Dalamud distribution.
 

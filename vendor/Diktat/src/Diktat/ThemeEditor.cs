@@ -3,7 +3,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 
-namespace QuickUI;
+namespace Diktat;
 
 /// <summary>Per-plugin theme draft and reusable editor. No filesystem access or global state.
 /// Apply calls the consumer's save callback before accepting the draft; Cancel restores the last accepted snapshot.</summary>
