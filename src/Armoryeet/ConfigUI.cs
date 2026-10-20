@@ -52,10 +52,7 @@ public sealed class ConfigUI : ThemedWindow, IDisposable
             this.SetAppearanceActive(true);
             try
             {
-                // Keep the editor readable while the other windows preview arbitrary draft colors.
-                using var style = new UiStyleScope(TokyoNight.Theme);
-                using var child = ImRaii.Child("appearance-editor", Vector2.Zero, false);
-                if (child) this.themeEditor.Draw(TokyoNight.Theme, "appearance", this.saveTheme);
+                this.themeEditor.Draw(this.Theme, "appearance", this.saveTheme, pinFooter: false);
             }
             finally { ImGui.EndTabItem(); }
         }

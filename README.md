@@ -85,7 +85,7 @@ Run `/yeet help` or hover the `?` button in the main window for aliases. Expert 
 
 Behavior, scan scope, and movement settings are saved immediately.
 
-Open **Settings → Appearance** to choose Tokyo Night (default), Dalamud Default, FFXIV Menu, or custom colors. Changes preview across the main and settings windows; **Apply** saves them. **Cancel**, leaving the Appearance tab, or closing Settings restores the last applied theme. Appearance retains a fixed readable palette. Theme preferences belong to Armoryeet and do not affect other plugins.
+Open **Settings → Appearance** to choose Tokyo Night (default), Dalamud Default, FFXIV Menu, or custom colors. Changes preview across the main and settings windows; **Apply** saves them. **Cancel**, leaving the Appearance tab, or closing Settings restores the last applied theme. Theme preferences belong to Armoryeet and do not affect other plugins.
 
 Armoryeet bundles Diktat 0.1.1 and its MIT license. No separate theming plugin is required.
 

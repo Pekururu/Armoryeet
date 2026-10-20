@@ -95,17 +95,12 @@ public sealed class ThemeEditor
     /// <summary>Fills the available region with a scrollable editor and fixed actions.
     /// Use a readable, fixed editor theme; preview PreviewTheme in the consuming windows.
     /// Save exceptions show a retry message; the consumer's callback should log diagnostic details.</summary>
-    public void Draw(UiTheme editorTheme, string id, Action<ThemePreferences> save)
+    public void Draw(UiTheme editorTheme, string id, Action<ThemePreferences> save, bool pinFooter = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentNullException.ThrowIfNull(save);
         using var scope = ImRaii.PushId(id);
-        var width = Math.Max(1, ImGui.GetContentRegionAvail().X);
-        var statusHeight = new[] { "Save failed. See plugin log; retry or Cancel.", "Unsaved preview. Apply to keep it.", "Saved. Preview is up to date." }
-            .Max(text => ImGui.CalcTextSize(text, false, width).Y);
-        var footerHeight = Math.Max(editorTheme.Metrics.ControlHeight * ImGuiHelpers.GlobalScale, ImGui.GetFrameHeight())
-            + ImGui.GetStyle().ItemSpacing.Y + statusHeight;
-        UiWidgets.BodyWithFooter(editorTheme, "editor", footerHeight, () => this.DrawColors(editorTheme), () =>
+        void Footer()
         {
             if (UiWidgets.Button(editorTheme, "apply", "Apply", enabled: this.IsDirty || this.LoadNotice != null,
                 disabledReason: "No changes to save."))
@@ -117,12 +112,26 @@ public sealed class ThemeEditor
             if (UiWidgets.Button(editorTheme, "cancel", "Cancel", UiTone.Neutral)) this.Cancel();
             UiWidgets.HelpText(editorTheme, this.saveFailed ? "Save failed. See plugin log; retry or Cancel."
                 : this.IsDirty ? "Unsaved preview. Apply to keep it." : "Saved. Preview is up to date.");
-        });
+        }
+        if (!pinFooter)
+        {
+            // Scrolls with the host window like any other content; Apply/Cancel come first so they stay easy to reach.
+            Footer();
+            ImGui.Spacing();
+            this.DrawColors(editorTheme);
+            return;
+        }
+        var width = Math.Max(1, ImGui.GetContentRegionAvail().X);
+        var statusHeight = new[] { "Save failed. See plugin log; retry or Cancel.", "Unsaved preview. Apply to keep it.", "Saved. Preview is up to date." }
+            .Max(text => ImGui.CalcTextSize(text, false, width).Y);
+        var footerHeight = Math.Max(editorTheme.Metrics.ControlHeight * ImGuiHelpers.GlobalScale, ImGui.GetFrameHeight())
+            + ImGui.GetStyle().ItemSpacing.Y + statusHeight;
+        UiWidgets.BodyWithFooter(editorTheme, "editor", footerHeight, () => this.DrawColors(editorTheme), Footer);
     }
 
     private void DrawColors(UiTheme theme)
     {
-        UiWidgets.Title(theme, "Appearance", "Preview colors in your plugin window. This editor keeps a readable palette; Cancel restores the last applied theme.");
+        UiWidgets.Title(theme, "Appearance", "Preview colors in your plugin window. Cancel restores the last applied theme.");
         if (this.LoadNotice != null) UiWidgets.HelpText(theme, this.LoadNotice);
         ImGui.TextUnformatted("Preset");
         ImGui.SetNextItemWidth(-1);

@@ -61,7 +61,8 @@ public sealed class UiStyleScope : IDisposable
                 .Push(ImGuiStyleVar.PopupBorderSize, scale).Push(ImGuiStyleVar.FrameBorderSize, scale)
                 .Push(ImGuiStyleVar.WindowPadding, m.WindowPadding * scale).Push(ImGuiStyleVar.FramePadding, m.FramePadding * scale)
                 .Push(ImGuiStyleVar.ItemSpacing, m.ItemSpacing * scale).Push(ImGuiStyleVar.ItemInnerSpacing, m.ItemInnerSpacing * scale)
-                .Push(ImGuiStyleVar.CellPadding, m.CellPadding * scale).Push(ImGuiStyleVar.DisabledAlpha, .65f);
+                .Push(ImGuiStyleVar.CellPadding, m.CellPadding * scale).Push(ImGuiStyleVar.DisabledAlpha, .65f)
+                .Push(ImGuiStyleVar.ScrollbarSize, m.ScrollbarSize * scale);
         }
         catch
         {

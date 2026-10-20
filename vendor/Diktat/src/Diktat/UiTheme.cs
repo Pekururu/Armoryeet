@@ -41,4 +41,5 @@ public sealed record UiMetrics
     public float ControlHeight { get; init; } = 28;
     public float RowHeight { get; init; } = 28;
     public float SectionGap { get; init; } = 12;
+    public float ScrollbarSize { get; init; } = 9;
 }
