@@ -10,7 +10,7 @@ var head = new ArmouryItem(InventoryType.ArmoryHead, 2, 10, "Head", 1);
 var head2 = new ArmouryItem(InventoryType.ArmoryHead, 1, 11, "Head 2", 2);
 var ring = new ArmouryItem(InventoryType.ArmoryRings, 0, 12, "Ring", 3);
 var session = new ScanSession();
-session.Replace([ring, head, head2], 7, 20);
+session.Replace([ring, head, head2], 7, 20, 1);
 
 Assert(session.HasScanned && session.SelectedCount == 3, "A scan must select every result by default.");
 Assert(session.Groups.Select(group => group.Type).SequenceEqual([InventoryType.ArmoryHead, InventoryType.ArmoryRings]), "Groups must omit empties and use canonical order.");
@@ -28,7 +28,7 @@ session.SelectAll(); Assert(session.SelectedCount == 3, "Select All failed.");
 var snapshot = session.SelectedSnapshot();
 session.ClearAll();
 Assert(snapshot.Count == 3, "Selected snapshots must be immutable copies.");
-session.Replace([head], 2, 4);
+session.Replace([head], 2, 4, 1);
 Assert(session.Items.Count == 1 && session.SelectedCount == 1 && session.ProtectedCount == 2 && session.FreeInventorySlots == 4, "Rescan must replace state and select results.");
 
 var completed = new ItemMoverSnapshot(ItemMoverState.Completed, string.Empty, 1, 0, 1, Array.AsReadOnly(new[] { head }), Array.Empty<ArmouryItem>(), Array.Empty<ItemSkip>());
@@ -39,4 +39,6 @@ var movement = new ItemMoverSnapshot(ItemMoverState.Paused, "InCombat", 1, 1, 4,
 Assert(movement.ProcessedCount == 2 && Math.Abs(movement.Progress - .5f) < .001f && movement.IsActive, "Movement snapshot calculations failed.");
 Assert(movement.SkipDetails[0].Reason == ItemSkipReason.GearsetProtected, "Skip details must preserve item-specific reasons.");
 
+MovementTests.Run();
+ThemeTests.Run();
 Console.WriteLine("Armoryeet model tests passed.");

@@ -5,13 +5,16 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Windowing;
+using Dalamud.Interface.Utility;
+using QuickUI;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using OpenSettingsDelegate = System.Action;
 
 namespace Armoryeet;
 
-public sealed class PluginUI : Window, IDisposable
+public sealed class PluginUI : ThemedWindow, IDisposable
 {
     private readonly Configuration configuration;
     private readonly GearsetScanner gearsetScanner;
@@ -22,10 +25,14 @@ public sealed class PluginUI : Window, IDisposable
     private readonly ScanSession session = new();
     private IReadOnlyList<ArmouryItem>? confirmationItems;
     private int confirmationCapacity;
+    private ulong confirmationCharacterId;
     private bool openConfirmation;
     private bool staleConfirmation;
+    private bool closeConfirmation;
+    private string? scanError;
     private string filter = string.Empty;
     private bool showCompletionDetails;
+    private bool showCompletion;
     private ItemMoverSnapshot lastProcessedSnapshot;
 
     public PluginUI(Configuration configuration, GearsetScanner gearsetScanner, ArmouryScanner armouryScanner, ItemMover itemMover, ITextureProvider textureProvider, OpenSettingsDelegate openSettings)
@@ -34,202 +41,242 @@ public sealed class PluginUI : Window, IDisposable
         this.configuration = configuration; this.gearsetScanner = gearsetScanner; this.armouryScanner = armouryScanner;
         this.itemMover = itemMover; this.textureProvider = textureProvider; this.openSettings = openSettings;
         this.lastProcessedSnapshot = itemMover.Snapshot;
-        this.Size = new Vector2(620, 400);
+        this.itemMover.StateChanged += this.ProcessTerminalState;
+        this.SetTheme(this.Theme with { Metrics = this.Theme.Metrics with { SectionGap = 6, ItemSpacing = new Vector2(8, 4) } });
+        this.Size = new Vector2(660, 480);
         this.SizeCondition = ImGuiCond.FirstUseEver;
-        this.SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(560, 280), MaximumSize = new Vector2(900, 720) };
-        this.TitleBarButtons.Add(new TitleBarButton { Icon = FontAwesomeIcon.QuestionCircle, ShowTooltip = CommandReferenceUI.DrawCompactTooltip, Click = _ => { }, Priority = 1 });
+        this.SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(560, 400), MaximumSize = new Vector2(900, 720) };
+        this.TitleBarButtons.Add(new TitleBarButton { Icon = FontAwesomeIcon.QuestionCircle, ShowTooltip = () => CommandReferenceUI.DrawCompactTooltip(this.Theme), Click = _ => { }, Priority = 1 });
         this.TitleBarButtons.Add(new TitleBarButton { Icon = FontAwesomeIcon.Cog, ShowTooltip = () => ImGui.SetTooltip("Settings"), Click = _ => this.openSettings(), Priority = 0 });
     }
+
+    internal bool HasReviewItems => this.session.Items.Count > 0;
+    internal bool ShowMoveActions => this.HasReviewItems || this.itemMover.Snapshot.IsActive;
+    internal bool ShowCompletion => this.showCompletion;
 
     public ScanSession Session => this.session;
     public IReadOnlyList<ArmouryItem> PreviewItems => this.session.Items;
     public int ProtectedItemCount => this.session.ProtectedCount;
-    public void Dispose() { }
+    public void Dispose() => this.itemMover.StateChanged -= this.ProcessTerminalState;
     public override void OnOpen() { if (this.configuration.ScanWhenOpened) this.Scan(); }
 
-    public void Scan()
+    public void Scan() => this.Scan(ArmouryScanner.GetEnabledArmouryTypes(this.configuration));
+
+    public bool Scan(IEnumerable<InventoryType> inventoryTypes)
     {
-        var protectedIds = this.gearsetScanner.BuildGearsetItemIds();
-        var result = this.armouryScanner.Scan(protectedIds, ArmouryScanner.GetEnabledArmouryTypes(this.configuration));
-        this.SetScanResults(result.MovableItems, result.ProtectedItemCount);
-    }
-
-    public void SetScanResults(IEnumerable<ArmouryItem> items, int protectedCount) =>
-        this.session.Replace(items, protectedCount, ArmouryScanner.GetFreeInventorySlots());
-
-    public override void Draw()
-    {
-        this.ProcessTerminalState();
-        this.session.RefreshCapacity(ArmouryScanner.GetFreeInventorySlots());
-        this.DrawSummary();
-
-        if (ImGui.Button(this.session.HasScanned ? "↻  Rescan" : "⌕  Scan", new Vector2(110, 0))) this.Scan();
-        ImGui.SameLine();
-        if (ImGui.Button("✓  Select All")) this.session.SelectAll();
-        ImGui.SameLine();
-        if (ImGui.Button("×  Clear All")) this.session.ClearAll();
-        ImGui.SetNextItemWidth(-1);
-        ImGui.InputTextWithHint("##item-filter", "Filter by item name...", ref this.filter, 100);
-        ImGui.Separator();
-
-        if (!this.session.HasScanned) ImGui.TextUnformatted("Scan armoury chest for gear not used by gearsets.");
-        else if (this.session.Items.Count == 0) ImGui.TextUnformatted("No unregistered armoury items found.");
-        else
+        if (this.itemMover.IsMoving) return false;
+        var characterId = this.itemMover.CurrentCharacterId;
+        if (characterId == 0 || !this.gearsetScanner.TryBuildGearsetItemIds(out var protectedIds)
+            || !this.armouryScanner.TryScan(protectedIds, inventoryTypes, out var result)
+            || characterId != this.itemMover.CurrentCharacterId)
         {
-            var visibleCount = 0;
-            foreach (var group in this.session.Groups)
-            {
-                var visible = this.Filter(group.Items);
-                visibleCount += visible.Count;
-                if (visible.Count != 0) this.DrawGroup(group.Type, visible, group.Items.Count);
-            }
-            if (visibleCount == 0) ImGui.TextDisabled("No items match the filter.");
-            else if (!string.IsNullOrWhiteSpace(this.filter)) ImGui.TextDisabled($"Showing {visibleCount} of {this.session.Items.Count} items. Selection totals include hidden items.");
+            this.ResetForCharacter();
+            this.scanError = "Character, gearset, or inventory data unavailable. Scan again when loaded.";
+            return false;
         }
 
-        ImGui.Separator();
-        this.DrawProgress();
-        this.DrawActions();
+        this.scanError = null;
+        this.showCompletion = false;
+        this.session.Replace(result.MovableItems, result.ProtectedItemCount, ArmouryScanner.GetFreeInventorySlots(), characterId);
+        return true;
+    }
+
+    public void ResetForCharacter()
+    {
+        this.session.Reset();
+        this.showCompletion = false;
+        this.confirmationItems = null;
+        this.confirmationCharacterId = 0;
+        this.openConfirmation = this.staleConfirmation = false;
+        this.closeConfirmation = true;
+        this.scanError = null;
+    }
+
+    protected override void DrawContent()
+    {
+        this.session.RefreshCapacity(ArmouryScanner.GetFreeInventorySlots());
+        if (this.ShowMoveActions)
+        {
+            var reason = this.GetDisabledReason();
+            var gap = ImGui.GetStyle().ItemSpacing;
+            var width = ImGui.GetContentRegionAvail().X;
+            var actionsWidth = this.ActionWidth();
+            var inline = width - actionsWidth - gap.X >= ImGui.CalcTextSize("104 free slots").X;
+            var guidanceWidth = inline ? width - actionsWidth - gap.X : width;
+            var capacityWarning = $"Not enough inventory space: {this.session.Items.Count} required, {this.session.FreeInventorySlots} available.";
+            var textHeight = Math.Max(ImGui.CalcTextSize(capacityWarning, false, Math.Max(1, guidanceWidth)).Y,
+                ImGui.CalcTextSize(reason ?? this.CapacityGuidance(), false, Math.Max(1, guidanceWidth)).Y);
+            var height = inline ? Math.Max(ArmoryeetUi.ButtonHeight(this.Theme), textHeight)
+                : ArmoryeetUi.ButtonHeight(this.Theme) + textHeight + gap.Y;
+            UiWidgets.BodyWithFooter(this.Theme, "review", height + gap.Y * 2 + 1, this.DrawReview, this.DrawActions);
+        }
+        else this.DrawReview();
+        // Open and draw the modal outside the body's child ID scope.
         this.DrawConfirmation();
     }
 
+    private void DrawReview()
+    {
+        if (this.showCompletion || this.itemMover.Snapshot.IsActive) this.DrawProgress();
+        if (!this.HasReviewItems)
+        {
+            if (this.scanError != null) UiWidgets.HelpText(this.Theme, this.scanError);
+            else if (!this.showCompletion && !this.itemMover.Snapshot.IsActive)
+            {
+                UiWidgets.Title(this.Theme, this.session.HasScanned ? "No unused gear found" : "Review your Armoury Chest",
+                    this.session.HasScanned ? "Equipped gear and saved gearsets remain protected." : "Scan for gear that is not equipped or used by a gearset.");
+            }
+            if (ArmoryeetUi.PrimaryButton(this.Theme, "scan", this.session.HasScanned ? "Scan again" : "Scan Armoury Chest",
+                !this.itemMover.IsMoving, "Stop the active move before scanning.")) this.Scan();
+            return;
+        }
+
+        this.DrawSummary();
+        var enabled = !this.itemMover.IsMoving;
+        const string disabledReason = "Stop the active move before changing the review.";
+        if (UiWidgets.Button(this.Theme, "scan", "Rescan", UiTone.Neutral, enabled: enabled, disabledReason: disabledReason)) this.Scan();
+        ImGui.SameLine();
+        if (UiWidgets.Button(this.Theme, "select-all", "Select All", UiTone.Neutral, enabled: enabled, disabledReason: disabledReason)) this.session.SelectAll();
+        ImGui.SameLine();
+        if (UiWidgets.Button(this.Theme, "clear-all", "Clear All", UiTone.Neutral, enabled: enabled, disabledReason: disabledReason)) this.session.ClearAll();
+        ImGui.TextUnformatted("Filter items");
+        ImGui.SetNextItemWidth(-1);
+        ImGui.InputTextWithHint("##item-filter", "Filter by item name...", ref this.filter, 100);
+        var visibleCount = 0;
+        foreach (var group in this.session.Groups)
+        {
+            var visible = this.Filter(group.Items);
+            visibleCount += visible.Count;
+            if (visible.Count != 0) this.DrawGroup(group.Type, visible, group.Items.Count);
+        }
+        if (visibleCount == 0) UiWidgets.HelpText(this.Theme, "No items match the filter.");
+        if (!string.IsNullOrWhiteSpace(this.filter)) ArmoryeetUi.SecondaryText(this.Theme,
+            $"Showing {visibleCount} of {this.session.Items.Count} items. Selection includes hidden items.");
+    }
 
     private void DrawSummary()
     {
-        ImGui.TextUnformatted($"Selected {this.session.SelectedCount} of {this.session.Items.Count}   Protected: {this.session.ProtectedCount}   Free slots: {this.session.FreeInventorySlots}");
-        if (this.session.SelectedCount > this.session.FreeInventorySlots)
-            ImGui.TextColored(new Vector4(1, .65f, .2f, 1), $"Free {this.session.SelectedCount - this.session.FreeInventorySlots} more inventory slot(s) to move this selection.");
+        UiWidgets.Surface(this.Theme, "summary", () =>
+        {
+            ArmoryeetUi.Emphasis(this.Theme, $"{this.session.SelectedCount} selected / {this.session.Items.Count} available");
+            var tight = this.session.SelectedCount > this.session.FreeInventorySlots;
+            UiWidgets.Status(this.Theme, $"{this.session.FreeInventorySlots} free slots", tight ? UiTone.Warning : UiTone.Neutral);
+            ImGui.SameLine();
+            ArmoryeetUi.SecondaryText(this.Theme, $"·  {this.session.ProtectedCount} protected");
+        });
     }
 
     private void DrawGroup(InventoryType type, IReadOnlyList<ArmouryItem> items, int totalCount)
     {
-        ImGui.Spacing();
-
         var selectedCount = 0;
         foreach (var item in this.session.Items)
             if (item.InventoryType == type && this.session.IsSelected(item)) selectedCount++;
-
+        var allSelected = selectedCount == totalCount;
+        var mixed = selectedCount > 0 && !allSelected;
         var expanded = false;
-        if (ImGui.BeginTable($"group-header-{type}", 2, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoSavedSettings))
+        using (var table = ImRaii.Table($"category-{type}", 3, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoSavedSettings))
         {
-            ImGui.TableSetupColumn("Group", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("000/000").X);
+            if (!table) return;
+            ImGui.TableSetupColumn("Selection", ImGuiTableColumnFlags.WidthFixed, ImGui.GetTextLineHeight());
+            ImGui.TableSetupColumn("Category", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize($"{totalCount}/{totalCount}").X);
             ImGui.TableNextColumn();
-            expanded = ImGui.CollapsingHeader($"{FormatInventoryType(type)}###header-{type}", ImGuiTreeNodeFlags.DefaultOpen);
+            using (var disabled = ImRaii.Disabled(this.itemMover.Snapshot.IsActive))
+            {
+                if (ArmoryeetUi.CompactCheckbox(this.Theme, $"##group-{type}", ref allSelected, mixed)) this.session.ToggleGroup(type);
+            }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip(this.itemMover.Snapshot.IsActive
+                ? "Stop the active move before changing selection."
+                : $"{FormatInventoryType(type)}: {selectedCount} of {totalCount} selected. Click to {(selectedCount == totalCount ? "clear" : "select")} the entire category, including hidden items.");
             ImGui.TableNextColumn();
-            var count = $"{selectedCount}/{totalCount}";
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(count).X));
-            ImGui.TextDisabled(count);
-            ImGui.EndTable();
+            using (var padding = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(ImGui.GetStyle().FramePadding.X, 0)))
+                expanded = ImGui.CollapsingHeader($"{FormatInventoryType(type).ToUpperInvariant()}###header-{type}", ImGuiTreeNodeFlags.DefaultOpen);
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{selectedCount}/{totalCount}");
         }
         if (!expanded) return;
 
-        var allSelected = true;
-        var anySelected = false;
-        foreach (var item in this.session.Items)
+        foreach (var item in items)
         {
-            if (item.InventoryType != type) continue;
-            allSelected &= this.session.IsSelected(item);
-            anySelected |= this.session.IsSelected(item);
+            var icon = item.IconId == 0 ? null : this.textureProvider.GetFromGameIcon(new GameIconLookup(item.IconId)).GetWrapOrDefault();
+            var enabled = !this.itemMover.Snapshot.IsActive;
+            if (UiWidgets.SelectableRow(this.Theme, $"item-{type}-{item.Slot}", item.DisplayName,
+                this.session.IsSelected(item), enabled: enabled,
+                disabledReason: "Stop the active move before changing selection.", icon: icon)) this.session.Toggle(item);
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip($"{item.DisplayName}\nItem ID: {item.ItemId}\nArmoury slot: {item.Slot + 1}\nContainer: {FormatInventoryType(type)}"
+                    + (enabled ? string.Empty : "\nStop the active move before changing selection."));
         }
-        var groupSelected = allSelected;
-        if (this.itemMover.Snapshot.IsActive) ImGui.BeginDisabled();
-        if (anySelected && !allSelected)
-        {
-            if (ImGui.SmallButton($"-  Partially selected##group-{type}")) this.session.ToggleGroup(type);
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Some items are selected. Click to select the whole group.");
-        }
-        else if (ImGui.Checkbox($"Select all in {FormatInventoryType(type)}##group-{type}", ref groupSelected)) this.session.ToggleGroup(type);
-        if (this.itemMover.Snapshot.IsActive) ImGui.EndDisabled();
-
-        ImGui.Indent(12);
-        if (ImGui.BeginTable($"items-{type}", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoSavedSettings))
-        {
-            ImGui.TableSetupColumn("Selected", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight());
-            ImGui.TableSetupColumn("Icon", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight());
-            ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch);
-            foreach (var item in items)
-            {
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                var selected = this.session.IsSelected(item);
-                if (this.itemMover.Snapshot.IsActive) ImGui.BeginDisabled();
-                if (ImGui.Checkbox($"##item-{type}-{item.Slot}", ref selected)) this.session.Toggle(item);
-                ImGui.TableNextColumn(); this.DrawIcon(item.IconId);
-                ImGui.TableNextColumn();
-                if (ImGui.Selectable($"{item.DisplayName}###select-{type}-{item.Slot}", selected)) this.session.Toggle(item);
-                if (this.itemMover.Snapshot.IsActive) ImGui.EndDisabled();
-                if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Item ID: {item.ItemId}\nArmoury slot: {item.Slot + 1}\nContainer: {FormatInventoryType(type)}");
-            }
-            ImGui.EndTable();
-        }
-
-        ImGui.Unindent(12);
-        ImGui.Spacing();
-    }
-
-    private void DrawIcon(uint iconId)
-    {
-        if (iconId != 0)
-        {
-            var texture = this.textureProvider.GetFromGameIcon(new GameIconLookup(iconId)).GetWrapOrDefault();
-            if (texture != null) { ImGui.Image(texture.Handle, new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight())); return; }
-        }
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight(), ImGui.GetTextLineHeight()));
     }
 
     private void DrawProgress()
     {
         var snapshot = this.itemMover.Snapshot;
-        if (snapshot.IsActive && snapshot.TotalCount > 0) ImGui.ProgressBar(snapshot.Progress, new Vector2(-1, 0), $"{snapshot.State} {snapshot.ProcessedCount}/{snapshot.TotalCount}");
-        if (snapshot.State != ItemMoverState.Idle)
+        UiWidgets.Surface(this.Theme, "movement", () =>
         {
-            var color = snapshot.State switch
+            var tone = snapshot.State switch
             {
-                ItemMoverState.Completed when snapshot.SkippedCount == 0 => new Vector4(.35f, .9f, .45f, 1),
-                ItemMoverState.Completed or ItemMoverState.Stopped => new Vector4(1, .75f, .25f, 1),
-                ItemMoverState.Failed => new Vector4(1, .35f, .3f, 1),
-                _ => new Vector4(.75f, .85f, 1, 1),
+                ItemMoverState.Completed when snapshot.SkippedCount == 0 => UiTone.Success,
+                ItemMoverState.Completed or ItemMoverState.Stopped or ItemMoverState.Paused => UiTone.Warning,
+                ItemMoverState.Failed => UiTone.Danger,
+                _ => UiTone.Info,
             };
-            ImGui.TextColored(color, this.itemMover.Status);
-        }
-        if (snapshot.SkipDetails.Count > 0)
-        {
-            if (ImGui.SmallButton(this.showCompletionDetails ? "Hide skipped details" : "Show skipped details")) this.showCompletionDetails = !this.showCompletionDetails;
-            if (this.showCompletionDetails)
-                foreach (var skip in snapshot.SkipDetails) ImGui.BulletText($"{skip.Item.DisplayName}: {FormatSkipReason(skip.Reason)}");
-        }
-        if (snapshot.State is ItemMoverState.Completed or ItemMoverState.Stopped or ItemMoverState.Failed)
-        {
-            ImGui.SameLine();
-            if (ImGui.SmallButton("Rescan now")) this.Scan();
-        }
+            UiWidgets.Status(this.Theme, snapshot.State.ToString(), tone);
+            if (snapshot.IsActive)
+            {
+                UiWidgets.Progress(this.Theme, snapshot.ProcessedCount, snapshot.TotalCount);
+                UiWidgets.HelpText(this.Theme, this.itemMover.Status);
+            }
+            else
+            {
+                ArmoryeetUi.Emphasis(this.Theme, $"Moved {snapshot.MovedCount} items · {this.session.FreeInventorySlots} free slots");
+                if (snapshot.SkippedCount > 0) UiWidgets.HelpText(this.Theme, $"{snapshot.SkippedCount} skipped items remain for review.");
+                if (snapshot.State != ItemMoverState.Completed) UiWidgets.HelpText(this.Theme, this.itemMover.Status);
+            }
+            if (snapshot.SkipDetails.Count > 0)
+            {
+                if (UiWidgets.Button(this.Theme, "skip-details", this.showCompletionDetails ? "Hide skipped details" : "Show skipped details", UiTone.Neutral)) this.showCompletionDetails = !this.showCompletionDetails;
+                if (this.showCompletionDetails)
+                    foreach (var skip in snapshot.SkipDetails) ImGui.BulletText($"{skip.Item.DisplayName}: {FormatSkipReason(skip.Reason)}");
+            }
+        });
     }
+
+    private string MoveLabel => $"Move {this.session.SelectedCount} items";
+    private float ActionWidth() => (this.HasReviewItems ? ArmoryeetUi.ButtonWidth(this.MoveLabel) : 0)
+        + (this.itemMover.Snapshot.IsActive ? ArmoryeetUi.ButtonWidth("Stop") + (this.HasReviewItems ? ImGui.GetStyle().ItemSpacing.X : 0) : 0);
+    private string CapacityGuidance() => $"{this.session.SelectedCount} slots needed · {this.session.FreeInventorySlots} available";
 
     private void DrawActions()
     {
-        var active = this.itemMover.Snapshot.IsActive;
-        if (active)
-        {
-            if (ImGui.Button("■  Stop", new Vector2(100, 0))) this.itemMover.Stop();
-            ImGui.SameLine();
-        }
-
+        if (!this.ShowMoveActions) return;
+        ImGui.Separator();
         var reason = this.GetDisabledReason();
-        if (reason != null) ImGui.BeginDisabled();
-        if (ImGui.Button($"→  Move {this.session.SelectedCount} selected items to Inventory", new Vector2(-1, 0)))
+        var width = ImGui.GetContentRegionAvail().X;
+        var actionWidth = this.ActionWidth();
+        var gap = ImGui.GetStyle().ItemSpacing;
+        var inline = width - actionWidth - gap.X >= ImGui.CalcTextSize("104 free slots").X;
+        var origin = ImGui.GetCursorPos();
+        var guidanceWidth = inline ? width - actionWidth - gap.X : width;
+        ImGui.PushTextWrapPos(origin.X + Math.Max(1, guidanceWidth));
+        try { ImGui.TextUnformatted(reason ?? this.CapacityGuidance()); }
+        finally { ImGui.PopTextWrapPos(); }
+        if (inline) ImGui.SetCursorPos(new Vector2(origin.X + width - actionWidth, origin.Y));
+        else ImGui.SetCursorPosX(origin.X + Math.Max(0, width - actionWidth));
+        if (this.itemMover.Snapshot.IsActive)
+        {
+            if (UiWidgets.Button(this.Theme, "stop", "Stop", UiTone.Danger)) this.itemMover.Stop();
+            if (this.HasReviewItems) ImGui.SameLine();
+        }
+        if (this.HasReviewItems && ArmoryeetUi.PrimaryButton(this.Theme, "move-selected", this.MoveLabel, reason == null, reason))
         {
             if (this.configuration.SkipMoveConfirmation) this.StartReviewedMove(); else this.OpenConfirmation();
-        }
-        if (reason != null)
-        {
-            ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip(reason);
         }
     }
 
     private string? GetDisabledReason()
     {
+        if (this.session.CharacterId == 0 || this.session.CharacterId != this.itemMover.CurrentCharacterId) return "Scan again for the current character.";
         if (this.session.SelectedCount == 0) return "Select at least one item.";
         if (this.itemMover.Snapshot.IsActive) return "A move is already active.";
         if (this.confirmationItems != null || this.openConfirmation) return "Confirm or cancel the pending move first.";
@@ -242,50 +289,73 @@ public sealed class PluginUI : Window, IDisposable
         this.session.RefreshCapacity(ArmouryScanner.GetFreeInventorySlots());
         if (this.session.SelectedCount == 0 || this.session.SelectedCount > this.session.FreeInventorySlots) return;
         this.confirmationItems = this.session.SelectedSnapshot(); this.confirmationCapacity = this.session.FreeInventorySlots; this.staleConfirmation = false; this.openConfirmation = true;
+        this.confirmationCharacterId = this.session.CharacterId;
+        this.closeConfirmation = false;
     }
 
     private void StartReviewedMove()
     {
         this.session.RefreshCapacity(ArmouryScanner.GetFreeInventorySlots());
         var items = this.session.SelectedSnapshot();
-        this.itemMover.TryEnqueueReviewed(items, this.session.FreeInventorySlots);
+        this.itemMover.TryEnqueueReviewed(items, this.session.CharacterId);
     }
 
     private void DrawConfirmation()
     {
         if (this.openConfirmation) { ImGui.OpenPopup("Confirm move###ArmoryeetConfirm"); this.openConfirmation = false; }
+        ImGui.SetNextWindowSizeConstraints(new Vector2(380 * ImGuiHelpers.GlobalScale, 0), new Vector2(560 * ImGuiHelpers.GlobalScale, float.MaxValue));
         var open = true;
-        if (!ImGui.BeginPopupModal("Confirm move###ArmoryeetConfirm", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+        UiWidgets.Modal(this.Theme, "ArmoryeetConfirm", "Confirm move", ref open, this.DrawConfirmationContent);
+        if (!ImGui.IsPopupOpen("Confirm move###ArmoryeetConfirm")) this.confirmationItems = null;
+    }
+
+    private void DrawConfirmationContent()
+    {
+        if (this.closeConfirmation || this.confirmationCharacterId == 0 || this.confirmationCharacterId != this.itemMover.CurrentCharacterId)
         {
-            if (!open) this.confirmationItems = null;
+            this.confirmationItems = null;
+            this.closeConfirmation = false;
+            ImGui.CloseCurrentPopup();
             return;
         }
 
         var items = this.confirmationItems ?? Array.Empty<ArmouryItem>();
-        ImGui.TextUnformatted($"Move {items.Count} selected item(s) to Inventory?");
-        ImGui.TextUnformatted($"Required slots: {items.Count}   Available when opened: {this.confirmationCapacity}");
-        if (this.staleConfirmation) ImGui.TextColored(new Vector4(1, .4f, .3f, 1), "Selection or capacity changed. Cancel and review again.");
-        if (ImGui.Button("Move", new Vector2(120, 0)))
+        ArmoryeetUi.Emphasis(this.Theme, $"Move {items.Count} items to inventory?");
+        ArmoryeetUi.SecondaryText(this.Theme, $"{items.Count} slots needed · {this.confirmationCapacity} available at review");
+        ImGui.Spacing();
+        ImGui.Separator();
+        if (this.staleConfirmation) UiWidgets.Status(this.Theme, "Selection or capacity changed. Cancel and review again.", UiTone.Warning);
+        var moveLabel = $"Move {items.Count} items";
+        var buttonsWidth = ArmoryeetUi.ButtonWidth("Cancel") + ImGui.GetStyle().ItemSpacing.X + ArmoryeetUi.ButtonWidth(moveLabel);
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, ImGui.GetContentRegionAvail().X - buttonsWidth));
+        if (UiWidgets.Button(this.Theme, "cancel-move", "Cancel", UiTone.Neutral))
+        {
+            this.confirmationItems = null;
+            ImGui.CloseCurrentPopup();
+            return;
+        }
+        ImGui.SameLine();
+        if (ArmoryeetUi.PrimaryButton(this.Theme, "confirm-move", moveLabel))
         {
             var current = this.session.SelectedSnapshot();
             var capacity = ArmouryScanner.GetFreeInventorySlots(); this.session.RefreshCapacity(capacity);
-            if (SameItems(items, current) && capacity == this.confirmationCapacity && capacity >= items.Count && this.itemMover.TryEnqueueReviewed(items, capacity))
+            if (SameItems(items, current) && this.session.CharacterId == this.confirmationCharacterId
+                && capacity == this.confirmationCapacity && capacity >= items.Count
+                && this.itemMover.TryEnqueueReviewed(items, this.confirmationCharacterId))
             { this.confirmationItems = null; ImGui.CloseCurrentPopup(); }
             else this.staleConfirmation = true;
         }
-        ImGui.SameLine();
-        if (ImGui.Button("Cancel", new Vector2(120, 0))) { this.confirmationItems = null; ImGui.CloseCurrentPopup(); }
-        ImGui.EndPopup();
     }
 
-    private void ProcessTerminalState()
+    private void ProcessTerminalState(ItemMoverSnapshot snapshot)
     {
-        var snapshot = this.itemMover.Snapshot;
         if (ReferenceEquals(snapshot, this.lastProcessedSnapshot)) return;
         this.lastProcessedSnapshot = snapshot;
         if (snapshot.State is not (ItemMoverState.Completed or ItemMoverState.Stopped or ItemMoverState.Failed)) return;
+        if (this.session.CharacterId != this.itemMover.CurrentCharacterId) { this.ResetForCharacter(); return; }
         this.session.Reconcile(snapshot);
         if (snapshot.State == ItemMoverState.Completed && this.configuration.RescanAfterMove) this.Scan();
+        this.showCompletion = true;
         if (snapshot.State == ItemMoverState.Completed && this.configuration.CloseAfterMove) this.IsOpen = false;
     }
 
@@ -311,6 +381,7 @@ public sealed class PluginUI : Window, IDisposable
         ItemSkipReason.ArmourySlotChanged => "the item in the Armoury slot changed",
         ItemSkipReason.GearsetProtected => "the item is now used by a gearset or equipped",
         ItemSkipReason.RetryLimitReached => "the move did not complete after repeated attempts",
+        ItemSkipReason.MoveUnconfirmed => "the transfer could not be confirmed; rescan before retrying",
         _ => reason.ToString(),
     };
 

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using QuickUI;
 using System.Linq;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
@@ -28,6 +30,9 @@ public sealed class Plugin : IDalamudPlugin
     internal static IClientState ClientState { get; private set; } = null!;
 
     [PluginService]
+    internal static IPlayerState PlayerState { get; private set; } = null!;
+
+    [PluginService]
     internal static ICondition Condition { get; private set; } = null!;
 
     [PluginService]
@@ -47,6 +52,8 @@ public sealed class Plugin : IDalamudPlugin
     private readonly ItemMover itemMover;
     private readonly PluginUI mainWindow;
     private readonly ConfigUI configWindow;
+    private readonly ThemeEditor themeEditor;
+    private ulong characterId;
 
     public Plugin()
     {
@@ -55,7 +62,8 @@ public sealed class Plugin : IDalamudPlugin
 
         this.gearsetScanner = new GearsetScanner();
         this.armouryScanner = new ArmouryScanner(DataManager);
-        this.itemMover = new ItemMover(Framework, ClientState, Condition, Log, this.gearsetScanner, this.Configuration);
+        this.itemMover = new ItemMover(Framework, ClientState, PlayerState, Condition, Log, this.gearsetScanner, this.Configuration);
+        this.characterId = this.itemMover.CurrentCharacterId;
         this.mainWindow = new PluginUI(
             this.Configuration,
             this.gearsetScanner,
@@ -63,7 +71,8 @@ public sealed class Plugin : IDalamudPlugin
             this.itemMover,
             TextureProvider,
             this.OpenConfigUi);
-        this.configWindow = new ConfigUI(this.Configuration, this.Configuration.Save);
+        this.themeEditor = new ThemeEditor(this.Configuration.Theme);
+        this.configWindow = new ConfigUI(this.Configuration, this.Configuration.Save, this.themeEditor, this.SaveTheme);
 
         this.WindowSystem.AddWindow(this.mainWindow);
         this.WindowSystem.AddWindow(this.configWindow);
@@ -81,10 +90,12 @@ public sealed class Plugin : IDalamudPlugin
             HelpMessage = "Open Armoryeet settings.",
         });
 
-        PluginInterface.UiBuilder.Draw += this.WindowSystem.Draw;
+        PluginInterface.UiBuilder.Draw += this.Draw;
         PluginInterface.UiBuilder.OpenMainUi += this.ToggleMainUi;
         PluginInterface.UiBuilder.OpenConfigUi += this.ToggleConfigUi;
         ClientState.Login += this.OnLogin;
+        ClientState.Logout += this.OnLogout;
+        Framework.Update += this.OnFrameworkUpdate;
 
         if (this.Configuration.ScanOnLogin && ClientState.IsLoggedIn)
             this.mainWindow.Scan();
@@ -96,10 +107,12 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        Framework.Update -= this.OnFrameworkUpdate;
+        ClientState.Logout -= this.OnLogout;
         ClientState.Login -= this.OnLogin;
         PluginInterface.UiBuilder.OpenConfigUi -= this.ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi -= this.ToggleMainUi;
-        PluginInterface.UiBuilder.Draw -= this.WindowSystem.Draw;
+        PluginInterface.UiBuilder.Draw -= this.Draw;
         CommandManager.RemoveHandler(YeetSettingsCommandName);
         CommandManager.RemoveHandler(YeetCommandName);
         CommandManager.RemoveHandler(CommandName);
@@ -107,6 +120,29 @@ public sealed class Plugin : IDalamudPlugin
         this.configWindow.Dispose();
         this.mainWindow.Dispose();
         this.itemMover.Dispose();
+    }
+
+    private void Draw()
+    {
+        var preview = this.themeEditor.PreviewTheme;
+        this.mainWindow.SetTheme(this.mainWindow.Theme with { Colors = preview.Colors });
+        this.configWindow.SetTheme(this.configWindow.Theme with { Colors = preview.Colors });
+        this.WindowSystem.Draw();
+    }
+
+    private void SaveTheme(ThemePreferences preferences)
+    {
+        try
+        {
+            if (this.Configuration.Version != 1)
+                throw new InvalidOperationException("Unknown configuration version; theme preferences cannot be saved safely.");
+            this.Configuration.SaveTheme(preferences, next => PluginInterface.SavePluginConfig(next));
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "Could not save Armoryeet theme preferences.");
+            throw;
+        }
     }
 
     private void OnCommand(string command, string arguments)
@@ -232,15 +268,31 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnLogin()
     {
+        this.ResetCharacter();
         if (this.Configuration.ScanOnLogin)
             this.mainWindow.Scan();
     }
 
+    private void OnLogout(int type, int code) => this.ResetCharacter();
+
+    private void OnFrameworkUpdate(IFramework _)
+    {
+        if (this.characterId != this.itemMover.CurrentCharacterId) this.ResetCharacter();
+    }
+
+    private void ResetCharacter()
+    {
+        this.itemMover.Stop();
+        this.mainWindow.ResetForCharacter();
+        this.characterId = this.itemMover.CurrentCharacterId;
+    }
+
     private void ScanAndOpen(IEnumerable<InventoryType> inventoryTypes)
     {
-        var items = this.Scan(inventoryTypes);
+        if (this.itemMover.IsMoving) { this.Print("Already moving. Use /yeet stop first."); return; }
+        var scanned = this.mainWindow.Scan(inventoryTypes);
         this.mainWindow.IsOpen = true;
-        this.Print($"Scan found {items.Count} item(s).");
+        this.Print(scanned ? $"Scan found {this.mainWindow.PreviewItems.Count} item(s)." : "Scan unavailable. Try again when character and inventory data are loaded.");
     }
 
     private void ScanAndMove(IEnumerable<InventoryType> inventoryTypes, string label)
@@ -251,24 +303,25 @@ public sealed class Plugin : IDalamudPlugin
             return;
         }
 
-        var items = this.Scan(inventoryTypes);
+        if (!this.mainWindow.Scan(inventoryTypes))
+        {
+            this.Print("Scan unavailable. Try again when character and inventory data are loaded.");
+            return;
+        }
+        var items = this.mainWindow.PreviewItems;
         if (items.Count == 0)
         {
             this.Print($"No unregistered {label} item(s) found.");
             return;
         }
 
-        this.itemMover.Enqueue(items);
+        if (!this.itemMover.TryEnqueue(items, this.mainWindow.Session.CharacterId))
+        {
+            this.Print("Character changed or movement already active. Scan again.");
+            return;
+        }
         this.mainWindow.IsOpen = true;
         this.Print($"Moving {items.Count} unregistered {label} item(s) to inventory.");
-    }
-
-    private List<ArmouryItem> Scan(IEnumerable<InventoryType> inventoryTypes)
-    {
-        var protectedIds = this.gearsetScanner.BuildGearsetItemIds();
-        var result = this.armouryScanner.Scan(protectedIds, inventoryTypes);
-        this.mainWindow.SetScanResults(result.MovableItems, result.ProtectedItemCount);
-        return result.MovableItems.ToList();
     }
 
     private void PrintStatus()

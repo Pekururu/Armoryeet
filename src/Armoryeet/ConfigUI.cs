@@ -2,48 +2,80 @@ using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
+using QuickUI;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 
 namespace Armoryeet;
 
-public sealed class ConfigUI : Window, IDisposable
+public sealed class ConfigUI : ThemedWindow, IDisposable
 {
     private readonly Configuration configuration;
     private readonly Action save;
+    private readonly ThemeEditor themeEditor;
+    private readonly Action<ThemePreferences> saveTheme;
+    private bool appearanceActive;
 
-    public ConfigUI(Configuration configuration, Action save) : base("Armoryeet Settings###ArmoryeetSettings")
+    public ConfigUI(Configuration configuration, Action save, ThemeEditor themeEditor, Action<ThemePreferences> saveTheme) : base("Armoryeet Settings###ArmoryeetSettings")
     {
-        this.configuration = configuration; this.save = save;
-        this.Flags |= ImGuiWindowFlags.AlwaysAutoResize;
-        this.SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(470, 0), MaximumSize = new Vector2(760, 700) };
+        this.configuration = configuration;
+        this.save = save;
+        this.themeEditor = themeEditor;
+        this.saveTheme = saveTheme;
+        this.Size = new Vector2(540, 580);
+        this.SizeCondition = ImGuiCond.FirstUseEver;
+        this.SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(470, 420), MaximumSize = new Vector2(900, 900) };
     }
 
-    public void Dispose() { }
+    public void Dispose() => this.themeEditor.Cancel();
 
-    public override void Draw()
+    public override void OnClose()
     {
-        ImGui.TextUnformatted("Configure when Armoryeet scans, what it includes, and how reviewed moves behave.");
-        ImGui.Spacing();
+        this.themeEditor.Cancel();
+        this.appearanceActive = false;
+    }
+
+    internal void SetAppearanceActive(bool active)
+    {
+        if (this.appearanceActive && !active) this.themeEditor.Cancel();
+        this.appearanceActive = active;
+    }
+
+    protected override void DrawContent()
+    {
         if (!ImGui.BeginTabBar("ArmoryeetSettingsTabs")) return;
-        if (ImGui.BeginTabItem("Behavior")) { this.DrawBehavior(); ImGui.EndTabItem(); }
-        if (ImGui.BeginTabItem("Scan scope")) { this.DrawScanScope(); ImGui.EndTabItem(); }
-        if (ImGui.BeginTabItem("Movement")) { this.DrawMovement(); ImGui.EndTabItem(); }
+        if (ImGui.BeginTabItem("Behavior")) { this.SetAppearanceActive(false); this.DrawBehavior(); ImGui.EndTabItem(); }
+        if (ImGui.BeginTabItem("Scan scope")) { this.SetAppearanceActive(false); this.DrawScanScope(); ImGui.EndTabItem(); }
+        if (ImGui.BeginTabItem("Movement")) { this.SetAppearanceActive(false); this.DrawMovement(); ImGui.EndTabItem(); }
+        if (ImGui.BeginTabItem("Appearance"))
+        {
+            this.SetAppearanceActive(true);
+            try
+            {
+                // Keep the editor readable while the other windows preview arbitrary draft colors.
+                using var style = new UiStyleScope(TokyoNight.Theme);
+                using var child = ImRaii.Child("appearance-editor", Vector2.Zero, false);
+                if (child) this.themeEditor.Draw(TokyoNight.Theme, "appearance", this.saveTheme);
+            }
+            finally { ImGui.EndTabItem(); }
+        }
         ImGui.EndTabBar();
     }
 
     private void DrawBehavior()
     {
-        Section("Opening and scanning", "Choose when scan results should refresh automatically.");
-        this.Option("Scan when the main window opens", "Keeps reviewed results current whenever you open Armoryeet.", () => this.configuration.ScanWhenOpened, value => this.configuration.ScanWhenOpened = value);
-        this.Option("Scan after login", "Prepares results as soon as your character becomes available.", () => this.configuration.ScanOnLogin, value => this.configuration.ScanOnLogin = value);
-        this.Option("Rescan after a completed move", "Refreshes every Armoury group after the final item is processed.", () => this.configuration.RescanAfterMove, value => this.configuration.RescanAfterMove = value);
+        Section("Automatic scanning", "Choose when results refresh.");
+        this.Option("Scan on open", "Refresh results when opening Armoryeet.", () => this.configuration.ScanWhenOpened, value => this.configuration.ScanWhenOpened = value);
+        this.Option("Scan after login", "Prepare results when your character is ready.", () => this.configuration.ScanOnLogin, value => this.configuration.ScanOnLogin = value);
+        this.Option("Rescan after moving", "Refresh results when the queue finishes.", () => this.configuration.RescanAfterMove, value => this.configuration.RescanAfterMove = value);
         ImGui.Spacing();
-        Section("Window behavior", "Control what happens after a reviewed move finishes.");
-        this.Option("Close after a completed move", "Closes only after completion has been reconciled safely.", () => this.configuration.CloseAfterMove, value => this.configuration.CloseAfterMove = value);
+        Section("After moving", "");
+        this.Option("Close after completion", "Close once completed moves are reconciled.", () => this.configuration.CloseAfterMove, value => this.configuration.CloseAfterMove = value);
     }
 
     private void DrawScanScope()
     {
-        ImGui.TextWrapped("Only enabled Armoury Chest containers are included by the main Scan button and /yeet chest. Container-specific commands keep their existing explicit behavior.");
+        UiWidgets.HelpText(this.Theme, "Choose containers for Scan and /yeet chest. Category commands keep their explicit scope.");
         ImGui.Spacing();
         this.Group("Weapons", [
             ("Main hand", () => this.configuration.IncludeMainHand, value => this.configuration.IncludeMainHand = value),
@@ -65,30 +97,30 @@ public sealed class ConfigUI : Window, IDisposable
 
     private void DrawMovement()
     {
-        Section("Timing", "A short delay makes inventory updates easier for the game client to process.");
+        Section("Move timing", "Allow inventory updates between items.");
         var delay = this.configuration.DelayBetweenItemsMs;
-        ImGui.SetNextItemWidth(Math.Min(300, ImGui.GetContentRegionAvail().X));
+        ImGui.SetNextItemWidth(Math.Min(240 * ImGuiHelpers.GlobalScale, ImGui.GetContentRegionAvail().X));
         if (ImGui.SliderInt("Delay between items", ref delay, 0, 2000, "%d ms")) { this.configuration.DelayBetweenItemsMs = delay; this.save(); }
-        ImGui.TextDisabled("250 ms is the recommended default. Move retries still use their own safety interval.");
+        ArmoryeetUi.SecondaryText(this.Theme, "Recommended: 250 ms. Retry timing is separate.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        ImGui.TextColored(new Vector4(1, .65f, .2f, 1), "Advanced");
-        ImGui.TextWrapped("Confirmation is an important final review step. Capacity and selection are still checked when confirmation is bypassed.");
-        this.Option("Move reviewed selections without confirmation", "The main Move button begins immediately. Expert slash commands are already immediate.", () => this.configuration.SkipMoveConfirmation, value => this.configuration.SkipMoveConfirmation = value);
+        UiWidgets.Status(this.Theme, "Advanced", UiTone.Warning);
+        ImGui.TextWrapped("Skipping confirmation starts moves immediately. Capacity and selection checks still apply.");
+        this.Option("Skip move confirmation", "Expert slash commands already start immediately.", () => this.configuration.SkipMoveConfirmation, value => this.configuration.SkipMoveConfirmation = value);
     }
 
-    private static void Section(string title, string description)
+    private void Section(string title, string description)
     {
-        ImGui.TextUnformatted(title); ImGui.TextDisabled(description); ImGui.Spacing();
+        UiWidgets.Title(this.Theme, title, description);
     }
 
     private void Group(string title, (string Label, Func<bool> Get, Action<bool> Set)[] options)
     {
-        ImGui.Separator(); ImGui.TextUnformatted(title); ImGui.Spacing();
-        if (ImGui.SmallButton($"Select All###{title}-all")) this.SetAll(options, true);
-        ImGui.SameLine(); if (ImGui.SmallButton($"Clear All###{title}-none")) this.SetAll(options, false);
-        ImGui.Indent(8);
+        if (!UiWidgets.Section(this.Theme, title, title)) return;
+        if (UiWidgets.Button(this.Theme, $"{title}-all", "Select All", UiTone.Neutral)) this.SetAll(options, true);
+        ImGui.SameLine(); if (UiWidgets.Button(this.Theme, $"{title}-none", "Clear All", UiTone.Neutral)) this.SetAll(options, false);
+        ImGui.Indent(8 * ImGuiHelpers.GlobalScale);
         foreach (var option in options) this.Option(option.Label, null, option.Get, option.Set);
-        ImGui.Unindent(8); ImGui.Spacing();
+        ImGui.Unindent(8 * ImGuiHelpers.GlobalScale); ImGui.Spacing();
     }
 
     private void SetAll((string Label, Func<bool> Get, Action<bool> Set)[] options, bool value)
@@ -100,8 +132,11 @@ public sealed class ConfigUI : Window, IDisposable
     private void Option(string label, string? description, Func<bool> getter, Action<bool> setter)
     {
         var value = getter();
-        if (ImGui.Checkbox(label, ref value)) { setter(value); this.save(); }
+        if (ArmoryeetUi.CompactCheckbox(this.Theme, label, ref value)) { setter(value); this.save(); }
         if (description == null) return;
-        ImGui.Indent(26); ImGui.TextDisabled(description); ImGui.Unindent(26); ImGui.Spacing();
+        var indent = ImGui.GetTextLineHeight() + ImGui.GetStyle().ItemInnerSpacing.X;
+        ImGui.Indent(indent);
+        ArmoryeetUi.SecondaryText(this.Theme, description);
+        ImGui.Unindent(indent);
     }
 }

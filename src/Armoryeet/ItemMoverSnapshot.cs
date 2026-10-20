@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Armoryeet;
 
 public enum ItemMoverState { Idle, Moving, Paused, Completed, Stopped, Failed }
-public enum ItemSkipReason { SoulCrystalProtected, ArmourySlotEmpty, ArmourySlotChanged, GearsetProtected, RetryLimitReached }
+public enum ItemSkipReason { SoulCrystalProtected, ArmourySlotEmpty, ArmourySlotChanged, GearsetProtected, RetryLimitReached, MoveUnconfirmed }
 public sealed record ItemSkip(ArmouryItem Item, ItemSkipReason Reason);
 
 public sealed record ItemMoverSnapshot(

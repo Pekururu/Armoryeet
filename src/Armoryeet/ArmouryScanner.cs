@@ -50,33 +50,29 @@ public sealed unsafe class ArmouryScanner
         InventoryType.ArmoryRings,
     ];
 
-    public List<ArmouryItem> FindOrphans(IReadOnlySet<uint> gearsetItemIds, Configuration configuration)
+    public bool TryScan(IReadOnlySet<uint> gearsetItemIds, IEnumerable<InventoryType> inventoryTypes, out ArmouryScanResult result)
     {
-        return this.FindOrphans(gearsetItemIds, GetEnabledArmouryTypes(configuration));
-    }
-
-    public List<ArmouryItem> FindOrphans(IReadOnlySet<uint> gearsetItemIds, IEnumerable<InventoryType> inventoryTypes)
-        => new(this.Scan(gearsetItemIds, inventoryTypes).MovableItems);
-
-    public ArmouryScanResult Scan(IReadOnlySet<uint> gearsetItemIds, IEnumerable<InventoryType> inventoryTypes)
-    {
+        result = new ArmouryScanResult([], 0);
         var orphans = new List<ArmouryItem>();
         var protectedCount = 0;
         var inventoryManager = InventoryManager.Instance();
         if (inventoryManager == null)
-            return new ArmouryScanResult(orphans, protectedCount);
+            return false;
 
         foreach (var inventoryType in inventoryTypes)
         {
+            // The retired waist container is not loaded by current clients.
+            if (inventoryType == InventoryType.ArmoryWaist || inventoryType == InventoryType.ArmorySoulCrystal) continue;
             var container = inventoryManager->GetInventoryContainer(inventoryType);
-            if (container == null)
-                continue;
+            if (!InventoryItemReader.IsReady(container)) return false;
 
             for (var slot = 0; slot < container->Size; slot++)
             {
                 var item = container->GetInventorySlot(slot);
-                if (!InventoryItemReader.TryGetBaseItemId(item, out var baseItemId))
-                    continue;
+                var snapshot = InventoryItemReader.Read(item);
+                if (snapshot.State == InventorySlotState.Unavailable) return false;
+                if (snapshot.State == InventorySlotState.Empty) continue;
+                var baseItemId = snapshot.BaseItemId;
 
                 if (gearsetItemIds.Contains(baseItemId))
                 {
@@ -100,13 +96,13 @@ public sealed unsafe class ArmouryScanner
             }
         }
 
-        return new ArmouryScanResult(orphans, protectedCount);
+        result = new ArmouryScanResult(orphans, protectedCount);
+        return true;
     }
 
     public static int GetFreeInventorySlots()
     {
-        var manager = InventoryManager.Instance();
-        return manager == null ? 0 : checked((int)manager->GetEmptySlotsInBag());
+        return InventoryItemReader.TryGetCapacity(out var slots, out _) ? slots : 0;
     }
 
     public static IEnumerable<InventoryType> GetEnabledArmouryTypes(Configuration configuration)

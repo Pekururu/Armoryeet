@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.1</Version>
+    <Authors>Pekururu</Authors>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Use_Dalamud_FFXIVClientStructs>false</Use_Dalamud_FFXIVClientStructs>
+    <Use_Dalamud_Lumina>false</Use_Dalamud_Lumina>
+    <Use_Dalamud_Lumina_Excel>false</Use_Dalamud_Lumina_Excel>
+    <Use_Dalamud_Newtonsoft_Json>false</Use_Dalamud_Newtonsoft_Json>
+    <Use_Dalamud_Serilog>false</Use_Dalamud_Serilog>
+    <Use_Dalamud_MSObjectPool>false</Use_Dalamud_MSObjectPool>
+  </PropertyGroup>
+</Project>

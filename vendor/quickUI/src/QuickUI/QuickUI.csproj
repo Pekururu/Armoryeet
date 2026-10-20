@@ -1,0 +1,10 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Use_DalamudPackager>false</Use_DalamudPackager>
+    <Description>Scoped Tokyo Night styling and reusable widgets for Dalamud API 15.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="QuickUI.Tests" />
+  </ItemGroup>
+</Project>

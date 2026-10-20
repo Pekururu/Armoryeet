@@ -8,12 +8,12 @@ public sealed unsafe class GearsetScanner
 {
     private const int MaxGearsetSlots = 14;
 
-    public HashSet<uint> BuildGearsetItemIds()
+    public bool TryBuildGearsetItemIds(out HashSet<uint> ids)
     {
-        var ids = new HashSet<uint>();
+        ids = new HashSet<uint>();
         var gearsets = RaptureGearsetModule.Instance();
         if (gearsets == null)
-            return ids;
+            return false;
 
         foreach (ref var gearset in gearsets->Entries)
         {
@@ -30,19 +30,21 @@ public sealed unsafe class GearsetScanner
 
         var inventoryManager = InventoryManager.Instance();
         if (inventoryManager == null)
-            return ids;
+            return false;
 
         var equipped = inventoryManager->GetInventoryContainer(InventoryType.EquippedItems);
-        if (equipped == null)
-            return ids;
+        if (!InventoryItemReader.IsReady(equipped))
+            return false;
 
         for (var slot = 0; slot < equipped->Size; slot++)
         {
             var item = equipped->GetInventorySlot(slot);
-            if (InventoryItemReader.TryGetBaseItemId(item, out var itemId))
-                ids.Add(itemId);
+            var snapshot = InventoryItemReader.Read(item);
+            if (snapshot.State == InventorySlotState.Unavailable) return false;
+            if (snapshot.State == InventorySlotState.Occupied)
+                ids.Add(snapshot.BaseItemId);
         }
 
-        return ids;
+        return true;
     }
 }

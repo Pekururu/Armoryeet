@@ -1,0 +1,38 @@
+name: Build and model tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    env:
+      DALAMUD_HOME: ${{ github.workspace }}/artifacts/dalamud
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Download stable Dalamud references
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'dalamud.zip'
+          Invoke-WebRequest 'https://goatcorp.github.io/dalamud-distrib/latest.zip' -OutFile $archive
+          Expand-Archive -LiteralPath $archive -DestinationPath $env:DALAMUD_HOME
+      - name: Build Release
+        run: dotnet build src/Armoryeet/Armoryeet.csproj -c Release -p:RestoreLockedMode=true
+      - name: Run model and movement regression tests
+        run: dotnet run --project tests/Armoryeet.ModelTests/Armoryeet.ModelTests.csproj -c Release -p:RestoreLockedMode=true
+      - name: Verify bundled quickUI
+        shell: pwsh
+        run: |
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $PWD 'src/Armoryeet/bin/Release/Armoryeet/latest.zip'))
+          try {
+            foreach ($name in @('QuickUI.dll', 'QuickUI.LICENSE.txt')) {
+              if (-not ($zip.Entries | Where-Object FullName -eq $name)) { throw "Release package is missing $name" }
+            }
+          } finally { $zip.Dispose() }

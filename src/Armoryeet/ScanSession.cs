@@ -12,6 +12,7 @@ public sealed class ScanSession
     private readonly HashSet<ArmouryItem> selected = [];
 
     public bool HasScanned { get; private set; }
+    public ulong CharacterId { get; private set; }
     public int ProtectedCount { get; private set; }
     public int FreeInventorySlots { get; private set; }
     public IReadOnlyList<ArmouryItem> Items => new ReadOnlyCollection<ArmouryItem>(this.items);
@@ -22,8 +23,9 @@ public sealed class ScanSession
             .Select(type => (type, (IReadOnlyList<ArmouryItem>)this.items.Where(item => item.InventoryType == type).OrderBy(item => item.Slot).ToArray()))
             .Where(group => group.Item2.Count != 0);
 
-    public void Replace(IEnumerable<ArmouryItem> results, int protectedCount, int freeInventorySlots)
+    public void Replace(IEnumerable<ArmouryItem> results, int protectedCount, int freeInventorySlots, ulong characterId)
     {
+        if (characterId == 0) { this.Reset(); return; }
         this.items.Clear();
         this.items.AddRange(results.OrderBy(item => Array.IndexOf(ArmouryScanner.ArmouryTypes, item.InventoryType)).ThenBy(item => item.Slot));
         this.selected.Clear();
@@ -31,6 +33,16 @@ public sealed class ScanSession
         this.ProtectedCount = protectedCount;
         this.FreeInventorySlots = Math.Max(0, freeInventorySlots);
         this.HasScanned = true;
+        this.CharacterId = characterId;
+    }
+
+    public void Reset()
+    {
+        this.items.Clear();
+        this.selected.Clear();
+        this.HasScanned = false;
+        this.CharacterId = 0;
+        this.ProtectedCount = this.FreeInventorySlots = 0;
     }
 
     public void RefreshCapacity(int freeInventorySlots) => this.FreeInventorySlots = Math.Max(0, freeInventorySlots);
@@ -51,7 +63,6 @@ public sealed class ScanSession
 
     public void Reconcile(ItemMoverSnapshot snapshot)
     {
-        if (snapshot.CompletedItems.Count == 0) return;
         this.items.RemoveAll(snapshot.CompletedItems.Contains);
         this.selected.RemoveWhere(snapshot.CompletedItems.Contains);
         foreach (var skipped in snapshot.SkippedItems.Where(this.items.Contains)) this.selected.Add(skipped);

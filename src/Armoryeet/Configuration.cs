@@ -1,12 +1,15 @@
 using System;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
+using QuickUI;
 
 namespace Armoryeet;
 
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
+    public ThemePreferences Theme { get; set; } = new();
+
     public int Version { get; set; } = 1;
 
     public bool ScanOnLogin { get; set; }
@@ -53,6 +56,19 @@ public sealed class Configuration : IPluginConfiguration
     public void Initialize(IDalamudPluginInterface pluginInterface)
     {
         this.pluginInterface = pluginInterface;
+    }
+
+    internal void SaveTheme(ThemePreferences preferences, Action<Configuration> persist)
+    {
+        // Persist a detached candidate first. Existing consumers retain this configuration instance.
+        var next = (Configuration)this.MemberwiseClone();
+        next.Theme = new ThemePreferences
+        {
+            PresetId = preferences.PresetId,
+            CustomColors = preferences.CustomColors == null ? null : new(preferences.CustomColors),
+        };
+        persist(next);
+        this.Theme = next.Theme;
     }
 
     public void Save()

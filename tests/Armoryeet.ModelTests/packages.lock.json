@@ -7,6 +7,21 @@
         "requested": "[1.2.39, )",
         "resolved": "1.2.39",
         "contentHash": "fcFN01tDTIQqDuTwr1jUQK/geofiwjG5DycJQOnC72i1SsLAk1ELe+apBOuZ11UMQG8YKFZG1FgvjZPbqHyatg=="
+      },
+      "DalamudPackager": {
+        "type": "Transitive",
+        "resolved": "15.0.0",
+        "contentHash": "411vwC8/X8Z/sQ2TI6v3SvOn66xFPeOjFn3Zn+h0d3Ox2t1kFm66AhDvmx/qcMwVrR+Hidxj0dadpQ2dgyXMBQ=="
+      },
+      "armoryeet": {
+        "type": "Project",
+        "dependencies": {
+          "DalamudPackager": "[15.0.0, )",
+          "QuickUI": "[0.1.0, )"
+        }
+      },
+      "quickui": {
+        "type": "Project"
       }
     }
   }

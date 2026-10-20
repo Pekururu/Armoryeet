@@ -1,4 +1,6 @@
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
+using QuickUI;
 
 namespace Armoryeet;
 
@@ -34,30 +36,30 @@ public static class CommandReferenceUI
         ("/yeet rings", "Move ring results.", "/yeet ring"),
     ];
 
-    public static void Draw()
+    public static void Draw(UiTheme theme)
     {
         ImGui.TextWrapped("Use /yeet scan for the reviewed workflow with selection and capacity checks.");
         ImGui.Spacing();
         DrawSection("Window and safety commands", General);
         ImGui.Spacing();
-        ImGui.TextColored(new System.Numerics.Vector4(1, .65f, .2f, 1), "Immediate expert commands");
+        UiWidgets.Status(theme, "Immediate expert commands", UiTone.Warning);
         ImGui.TextWrapped("The commands below scan and enqueue immediately without the reviewed confirmation window. Gearset protection and movement blockers still apply.");
         DrawSection("Immediate movement", Immediate);
         ImGui.TextDisabled("Click Copy beside any row, then paste the command into chat.");
     }
 
-    public static void DrawCompactTooltip()
+    public static void DrawCompactTooltip(UiTheme theme)
     {
-        ImGui.SetNextWindowSizeConstraints(new System.Numerics.Vector2(410, 0), new System.Numerics.Vector2(410, float.MaxValue));
+        ImGui.SetNextWindowSizeConstraints(new System.Numerics.Vector2(410 * ImGuiHelpers.GlobalScale, 0), new System.Numerics.Vector2(410 * ImGuiHelpers.GlobalScale, float.MaxValue));
         ImGui.BeginTooltip();
         ImGui.TextUnformatted("Armoryeet commands");
         ImGui.Separator();
-        ImGui.TextUnformatted("/yeet scan"); ImGui.SameLine(145); ImGui.TextDisabled("Open reviewed results");
-        ImGui.TextUnformatted("/yeet status"); ImGui.SameLine(145); ImGui.TextDisabled("Show movement status");
-        ImGui.TextUnformatted("/yeet stop"); ImGui.SameLine(145); ImGui.TextDisabled("Stop the active queue");
-        ImGui.TextUnformatted("/yeet settings"); ImGui.SameLine(145); ImGui.TextDisabled("Open settings");
+        ImGui.TextUnformatted("/yeet scan"); ImGui.SameLine(145 * ImGuiHelpers.GlobalScale); ImGui.TextDisabled("Open reviewed results");
+        ImGui.TextUnformatted("/yeet status"); ImGui.SameLine(145 * ImGuiHelpers.GlobalScale); ImGui.TextDisabled("Show movement status");
+        ImGui.TextUnformatted("/yeet stop"); ImGui.SameLine(145 * ImGuiHelpers.GlobalScale); ImGui.TextDisabled("Stop the active queue");
+        ImGui.TextUnformatted("/yeet settings"); ImGui.SameLine(145 * ImGuiHelpers.GlobalScale); ImGui.TextDisabled("Open settings");
         ImGui.Spacing();
-        ImGui.TextColored(new System.Numerics.Vector4(1, .65f, .2f, 1), "Immediate movement");
+        UiWidgets.Status(theme, "Immediate movement", UiTone.Warning);
         ImGui.TextWrapped("/yeet chest, weapons, armor, accessories");
         ImGui.TextWrapped("/yeet mainhand, offhand, head, body, hands, waist, legs, feet, ears, neck, wrist, rings");
         ImGui.Spacing();
