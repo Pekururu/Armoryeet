@@ -4,35 +4,22 @@
   <img src="src/Armoryeet/images/icon.png" alt="Armoryeet icon" width="128">
 </p>
 
-Armoryeet is a Dalamud plugin for safely cleaning unused gear out of the FFXIV Armoury Chest.
-
-It compares Armoury Chest items against equipped gear and every saved gearset, presents the movable results for review, and moves only the items you select. Capacity checks, movement blockers, retry limits, and a final gearset check protect every reviewed move.
-
-- Localized item names and game icons, grouped in Armoury Chest order.
-- Select individual items, complete containers, or the entire scan. Compact category checkboxes show partial selection and include filtered-out items.
-- Live inventory-capacity checks with an explicit reviewed confirmation.
-- Automatic pauses during combat, duties, crafting, gathering, cutscenes, trades, loading, and other unsafe states.
-- Gearset and equipped-item protection immediately before every move.
-- Character-bound reviews and queues, cleared on logout or character changes.
-- Pauses when required inventory or protection data is unavailable.
-- Transfer confirmation checks both the source and the attempted destination.
-- Clear progress, completion summaries, and item-specific skip reasons. Empty results offer one Scan again action; Move and selection tools appear only when there are review items. Stop remains available throughout active movement.
-- Optional post-move rescan, close-after-move behavior, and advanced confirmation bypass.
-- Immediate category commands for experienced users.
+Armoryeet is a Dalamud plugin that clears unused gear out of the FFXIV Armoury Chest. It moves only the items you select, and only after checking them against your equipped gear and every saved gearset.
 
 Soul crystals are always excluded.
 
 ## Installation
 
-Add this custom plugin repository in **Dalamud Settings → Experimental → Custom Plugin Repositories**:
+1. In **Dalamud Settings → Experimental → Custom Plugin Repositories**, add:
 
-```text
-https://raw.githubusercontent.com/Pekururu/Armoryeet/main/repo.json
-```
+   ```text
+   https://raw.githubusercontent.com/Pekururu/Armoryeet/main/repo.json
+   ```
 
-Save the repository list, then install **Armoryeet** from `/xlplugins`.
+2. Save the list.
+3. Install **Armoryeet** from `/xlplugins`.
 
-## Reviewed workflow
+## How it works
 
 1. Open Armoryeet with `/yeet` or `/armoryeet`.
 2. Scan the enabled Armoury Chest containers.
@@ -40,21 +27,33 @@ Save the repository list, then install **Armoryeet** from `/xlplugins`.
 4. Move the selected items to inventory.
 5. Confirm the count and available capacity.
 
-Successfully moved rows disappear. Items skipped because their slot changed, they became protected, or retries were exhausted remain available for review.
+Moved rows disappear. Skipped items stay in the review, with a reason. An item is skipped when its slot changed, it became protected, or retries ran out.
+
+### Features
+
+- **Review:** localized item names and game icons, grouped in Armoury Chest order. Select single items, whole containers, or the entire scan. Category checkboxes show partial selection and include filtered-out items.
+- **Protection:** equipped items and gearset items are checked again immediately before every move. Movement pauses if inventory or protection data is unavailable.
+- **Capacity:** live inventory-capacity check, with explicit confirmation before moving.
+- **Safe states:** movement pauses during combat, duties, crafting, gathering, cutscenes, trades, loading, and other unsafe states.
+- **Verification:** each transfer is confirmed at both the source and the attempted destination.
+- **Character binding:** reviews and queues belong to one character and are cleared on logout or character change.
+- **Progress:** progress display, completion summary, and item-specific skip reasons. Stop stays available during movement. Empty results show only Scan again; Move and selection tools appear when there are items to review.
+- **Options:** post-move rescan, close-after-move, and an advanced confirmation bypass.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `/yeet` | Open Armoryeet. |
-| `/armoryeet` | Alias for opening Armoryeet. |
-| `/yeet scan` | Scan enabled containers and open reviewed results. |
+| `/yeet`, `/armoryeet` | Open Armoryeet. |
+| `/yeet scan` | Scan enabled containers and open the reviewed results. |
 | `/yeet status` | Report movement state and counts in chat. |
 | `/yeet stop` | Stop the active move queue. |
 | `/yeetsettings` | Open settings. |
 | `/yeet help` | Show the command summary in chat. |
 
-The following expert commands scan and enqueue immediately without the reviewed confirmation window:
+### Expert commands
+
+These scan and queue immediately, with no review window. Gearset protection and movement blockers still apply.
 
 ```text
 /yeet chest
@@ -75,33 +74,60 @@ The following expert commands scan and enqueue immediately without the reviewed 
 /yeet rings
 ```
 
-Run `/yeet help` or hover the `?` button in the main window for aliases. Expert commands still apply gearset protection and movement blockers.
+For aliases, run `/yeet help` or hover the `?` button in the main window.
 
 ## Settings
 
-- **Behavior:** scanning on open/login, post-move rescanning, and close-after-move behavior.
-- **Scan scope:** choose the weapon, armour, and accessory containers included by normal scans.
-- **Movement:** configure inter-item delay and the advanced confirmation bypass.
+Behavior, scan scope, and movement settings save immediately.
 
-Behavior, scan scope, and movement settings are saved immediately.
+- **Behavior:** scan on open/login, post-move rescan, close-after-move.
+- **Scan scope:** which weapon, armour, and accessory containers normal scans include.
+- **Movement:** delay between items, advanced confirmation bypass.
+- **Appearance:** Tokyo Night (default), Dalamud Default, FFXIV Menu, or custom colors.
+  - Changes preview across the main and settings windows. **Apply** saves them.
+  - **Cancel**, leaving the Appearance tab, or closing Settings restores the last applied theme.
+  - Theme preferences belong to Armoryeet and do not affect other plugins.
 
-Open **Settings → Appearance** to choose Tokyo Night (default), Dalamud Default, FFXIV Menu, or custom colors. Changes preview across the main and settings windows; **Apply** saves them. **Cancel**, leaving the Appearance tab, or closing Settings restores the last applied theme. Theme preferences belong to Armoryeet and do not affect other plugins.
+Armoryeet bundles Diktat 0.1.1 and its MIT license. No separate theming plugin is needed.
 
-Armoryeet bundles Diktat 0.1.1 and its MIT license. No separate theming plugin is required.
+## Development
 
-## Development and verification
+Requirements:
 
-Use .NET SDK `10.0.301` (pinned in `global.json`) and Dalamud API 15 references from XIVLauncher. The SDK discovers the normal launcher installation; set `DALAMUD_HOME` to use a different reference directory.
+- .NET SDK `10.0.301` (pinned in `global.json`).
+- Dalamud API 15 references from XIVLauncher. The SDK finds the normal launcher install; set `DALAMUD_HOME` to use another directory.
 
 ```bash
 dotnet build src/Armoryeet/Armoryeet.csproj -c Release -p:RestoreLockedMode=true
 dotnet run --project tests/Armoryeet.ModelTests/Armoryeet.ModelTests.csproj -c Release -p:RestoreLockedMode=true
 ```
 
-The build uses the checked-in Diktat source snapshot (`vendor/Diktat`); no sibling checkout is needed. CI also verifies the release ZIP contains Diktat.dll and its license.
+- The build uses the checked-in Diktat snapshot in `vendor/Diktat`. No sibling checkout is needed.
+- The second command is a console harness. It covers theme compatibility, Apply/Cancel, failed saves, and the production assembly, including movement decisions against a simulated inventory boundary and completion with the window closed. `dotnet test` does not run these assertions.
+- CI runs both commands against the stable Dalamud distribution and checks that the release ZIP contains `Diktat.dll` and its license.
 
-The console harness tests theme compatibility, Apply/Cancel, failed saves, and the production assembly, including movement decisions against a simulated inventory boundary and completion while the window is closed. `dotnet test` does not execute these assertions. CI runs both commands against the stable Dalamud distribution.
+### Release checks: movement changes
 
-Before releasing movement changes, verify in-game: logout and character switching, stale reviews, unavailable/loading inventory, gearset protection, full bags, rejected moves, combat pauses, Stop, and completion with the window closed. Confirm normal transfers and HQ items in `/xllog`. An accepted request is sent once, then checked up to ten times at 250 ms intervals while data is available; unconfirmed transfers stay in the review with a skip reason. Stop cancels future work but cannot undo a request already sent to the game.
+Verify in-game:
 
-Before releasing UI changes, check main and settings windows in-game at 1x, 1.5x, and 2x scale. Verify scrolling keeps Move/Stop visible, filtering preserves hidden selections, confirmation still rejects stale reviews, Apply survives reload, leaving Appearance or closing Settings discards drafts, and other plugins retain their own styling.
+- Logout and character switching.
+- Stale reviews.
+- Unavailable or loading inventory.
+- Gearset protection.
+- Full bags and rejected moves.
+- Combat pauses.
+- Stop, and completion with the window closed.
+- Normal and HQ transfers in `/xllog`.
+
+An accepted request is sent once, then checked up to ten times at 250 ms intervals while data is available. Unconfirmed transfers stay in the review with a skip reason. Stop cancels future work but cannot undo a request already sent to the game.
+
+### Release checks: UI changes
+
+Check the main and settings windows in-game at 1x, 1.5x, and 2x scale. Verify:
+
+- Scrolling keeps Move and Stop visible.
+- Filtering preserves hidden selections.
+- Confirmation rejects stale reviews.
+- Apply survives a reload.
+- Leaving Appearance or closing Settings discards drafts.
+- Other plugins keep their own styling.
